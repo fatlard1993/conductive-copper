@@ -1,0 +1,13 @@
+{
+  "required": true,
+  "package": "justfatlard.conductive_copper.mixin",
+  "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "RedstoneWireBlockMixin",
+    "CopperBlockMixin",
+    "CopperBulbMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 1
+  }
+}

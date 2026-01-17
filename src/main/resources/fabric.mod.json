@@ -1,0 +1,26 @@
+{
+  "schemaVersion": 1,
+  "id": "conductive_copper",
+  "version": "${version}",
+  "name": "Conductive Copper",
+  "description": "Copper blocks conduct redstone with oxidation-based resistance. Unoxidized copper is lossless, while oxidized copper causes signal decay.",
+  "authors": ["justfatlard"],
+  "contact": {
+    "homepage": "https://github.com/justfatlard/conductive-copper",
+    "sources": "https://github.com/justfatlard/conductive-copper",
+    "issues": "https://github.com/justfatlard/conductive-copper/issues"
+  },
+  "license": "CC0-1.0",
+  "icon": "assets/conductive_copper/icon.png",
+  "environment": "*",
+  "entrypoints": {
+    "main": ["justfatlard.conductive_copper.ConductiveCopper"]
+  },
+  "mixins": ["conductive_copper.mixins.json"],
+  "depends": {
+    "fabricloader": ">=0.16.9",
+    "minecraft": "~1.21.4",
+    "java": ">=21",
+    "fabric-api": "*"
+  }
+}
