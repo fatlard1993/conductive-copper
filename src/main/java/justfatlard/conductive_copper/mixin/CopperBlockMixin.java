@@ -32,39 +32,19 @@ public class CopperBlockMixin {
     private static final ThreadLocal<Boolean> IS_PROPAGATING = ThreadLocal.withInitial(() -> false);
 
     @Unique
-    private static final Set<Block> COPPER_BULBS = Set.of(
-        Blocks.COPPER_BULB, Blocks.EXPOSED_COPPER_BULB,
-        Blocks.WEATHERED_COPPER_BULB, Blocks.OXIDIZED_COPPER_BULB,
-        Blocks.WAXED_COPPER_BULB, Blocks.WAXED_EXPOSED_COPPER_BULB,
-        Blocks.WAXED_WEATHERED_COPPER_BULB, Blocks.WAXED_OXIDIZED_COPPER_BULB
-    );
+    private static Set<Block> copperBulbsCache = null;
 
-    /**
-     * When a copper block is removed, update all adjacent redstone wires.
-     */
-    @Inject(method = "onStateReplaced", at = @At("HEAD"))
-    private void onCopperRemoved(BlockState state, World world, BlockPos pos, BlockState newState, boolean moved, CallbackInfo ci) {
-        if (world.isClient()) {
-            return;
+    @Unique
+    private static Set<Block> getCopperBulbs() {
+        if (copperBulbsCache == null) {
+            copperBulbsCache = Set.of(
+                Blocks.COPPER_BULB, Blocks.EXPOSED_COPPER_BULB,
+                Blocks.WEATHERED_COPPER_BULB, Blocks.OXIDIZED_COPPER_BULB,
+                Blocks.WAXED_COPPER_BULB, Blocks.WAXED_EXPOSED_COPPER_BULB,
+                Blocks.WAXED_WEATHERED_COPPER_BULB, Blocks.WAXED_OXIDIZED_COPPER_BULB
+            );
         }
-
-        if (!ConductiveCopper.isConductiveCopper(state)) {
-            return;
-        }
-        if (ConductiveCopper.isConductiveCopper(newState)) {
-            return;
-        }
-
-        for (Direction dir : Direction.values()) {
-            BlockPos neighborPos = pos.offset(dir);
-            BlockState neighborState = world.getBlockState(neighborPos);
-
-            if (neighborState.getBlock() == Blocks.REDSTONE_WIRE) {
-                world.updateNeighbor(neighborPos, Blocks.COPPER_BLOCK, null);
-            } else if (ConductiveCopper.isConductiveCopper(neighborState)) {
-                world.updateNeighbor(neighborPos, Blocks.AIR, null);
-            }
-        }
+        return copperBulbsCache;
     }
 
     @Inject(method = "neighborUpdate", at = @At("HEAD"))
@@ -122,7 +102,7 @@ public class CopperBlockMixin {
                     visitedCopper.add(neighborPos);
                     toVisit.add(neighborPos);
 
-                    if (COPPER_BULBS.contains(neighborState.getBlock())) {
+                    if (getCopperBulbs().contains(neighborState.getBlock())) {
                         bulbsToUpdate.add(neighborPos);
                     }
                 } else if (neighborState.getBlock() == Blocks.REDSTONE_WIRE) {
@@ -132,7 +112,7 @@ public class CopperBlockMixin {
         }
 
         BlockState startState = world.getBlockState(startPos);
-        if (COPPER_BULBS.contains(startState.getBlock())) {
+        if (getCopperBulbs().contains(startState.getBlock())) {
             bulbsToUpdate.add(startPos);
         }
 

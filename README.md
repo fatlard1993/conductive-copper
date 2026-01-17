@@ -37,8 +37,8 @@ Mix different oxidation levels to control signal decay. The mod automatically fi
 
 ## Requirements
 
-- Minecraft 1.21.4
-- Fabric Loader 0.16.9+
+- Minecraft 1.21.11
+- Fabric Loader 0.18.1+
 - Fabric API
 
 ## Building from Source
