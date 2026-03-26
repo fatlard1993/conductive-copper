@@ -3,7 +3,6 @@ package justfatlard.conductive_copper.mixin;
 import justfatlard.conductive_copper.ConductiveCopper;
 import net.minecraft.block.Block;
 import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
 import net.minecraft.block.BulbBlock;
 import net.minecraft.state.property.Properties;
 import net.minecraft.util.math.BlockPos;
@@ -17,20 +16,47 @@ import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
+import java.util.HashSet;
+import java.util.Set;
+
 /**
  * Mixin to make copper bulbs toggle their light when receiving copper-conducted power.
  * Mimics vanilla toggle behavior: LIT toggles on rising edge (unpowered -> powered).
+ *
+ * With CopperPowerEmissionMixin active, copper blocks report power through vanilla's
+ * getWeakRedstonePower API. This mixin uses world.isReceivingRedstonePower() to get
+ * the combined vanilla + copper emission power.
  */
 @Mixin(BulbBlock.class)
 public class CopperBulbMixin {
 
+    // Per-position guard so Bulb A toggling doesn't suppress Bulb B's update
     @Unique
-    private static final ThreadLocal<Boolean> IS_UPDATING = ThreadLocal.withInitial(() -> false);
+    private static final ThreadLocal<Set<BlockPos>> IS_UPDATING = ThreadLocal.withInitial(HashSet::new);
 
     @Inject(method = "neighborUpdate", at = @At("HEAD"), cancellable = true)
     private void onCopperPowerChange(BlockState state, World world, BlockPos pos,
             Block sourceBlock, @Nullable WireOrientation wireOrientation, boolean notify, CallbackInfo ci) {
-        if (world.isClient() || IS_UPDATING.get()) {
+        if (world.isClient()) {
+            return;
+        }
+
+        Set<BlockPos> updating = IS_UPDATING.get();
+        if (updating.contains(pos)) {
+            return;
+        }
+
+        // Check if this bulb has adjacent copper (determines if we take over)
+        boolean hasAdjacentCopper = false;
+        for (Direction direction : Direction.values()) {
+            BlockPos adjacentPos = pos.offset(direction);
+            if (ConductiveCopper.isConductiveCopper(world.getBlockState(adjacentPos))) {
+                hasAdjacentCopper = true;
+                break;
+            }
+        }
+
+        if (!hasAdjacentCopper) {
             return;
         }
 
@@ -39,58 +65,11 @@ public class CopperBulbMixin {
         boolean currentlyPowered = currentState.get(Properties.POWERED);
         boolean currentlyLit = currentState.get(Properties.LIT);
 
-        // Check if this bulb is part of a copper network (has adjacent copper)
-        boolean hasAdjacentCopper = false;
-        boolean hasCopperPower = false;
-
-        for (Direction direction : Direction.values()) {
-            BlockPos adjacentPos = pos.offset(direction);
-            BlockState adjacentState = world.getBlockState(adjacentPos);
-
-            if (ConductiveCopper.isConductiveCopper(adjacentState)) {
-                hasAdjacentCopper = true;
-                int copperPower = ConductiveCopper.getSignalThroughCopper(
-                    world,
-                    adjacentPos,
-                    direction.getOpposite()
-                );
-
-                if (copperPower > 0) {
-                    hasCopperPower = true;
-                    break;
-                }
-            }
-        }
-
-        // Check vanilla power from non-wire sources only
-        boolean hasVanillaPower = false;
-        for (Direction dir : Direction.values()) {
-            BlockPos checkPos = pos.offset(dir);
-            BlockState checkState = world.getBlockState(checkPos);
-            if (checkState.getBlock() == Blocks.REDSTONE_WIRE) {
-                continue;
-            }
-            if (ConductiveCopper.isConductiveCopper(checkState)) {
-                continue;
-            }
-            int power = checkState.getWeakRedstonePower(world, checkPos, dir.getOpposite());
-            power = Math.max(power, checkState.getStrongRedstonePower(world, checkPos, dir.getOpposite()));
-            if (power > 0) {
-                hasVanillaPower = true;
-                break;
-            }
-        }
-
-        // If no adjacent copper, let vanilla handle this bulb completely
-        if (!hasAdjacentCopper) {
-            return;
-        }
-
-        // This bulb is part of a copper network - we handle ALL power logic
-        boolean shouldBePowered = hasVanillaPower || hasCopperPower;
+        // With the emission mixin active, vanilla's power query includes copper-conducted power
+        boolean shouldBePowered = world.isReceivingRedstonePower(pos);
 
         try {
-            IS_UPDATING.set(true);
+            updating.add(pos);
 
             if (shouldBePowered && !currentlyPowered) {
                 // Rising edge - toggle LIT and set POWERED
@@ -107,10 +86,9 @@ public class CopperBulbMixin {
                 world.setBlockState(pos, currentState.with(Properties.POWERED, false), Block.NOTIFY_ALL);
             }
 
-            // Always cancel vanilla for bulbs in copper networks - we handle everything
             ci.cancel();
         } finally {
-            IS_UPDATING.set(false);
+            updating.remove(pos);
         }
     }
 }

@@ -29,9 +29,13 @@ Starting with a lever (power level 15):
 
 Mix different oxidation levels to control signal decay. The mod automatically finds the lowest-resistance path through your copper network.
 
+## Limits
+
+Copper networks are limited to **256 blocks**. Larger networks will still conduct, but pathfinding stops exploring beyond this limit, which may result in lower signal strength at the edges.
+
 ## Installation
 
-1. Install [Fabric Loader](https://fabricmc.net/) (0.16.9 or newer)
+1. Install [Fabric Loader](https://fabricmc.net/) (0.18.1 or newer)
 2. Install [Fabric API](https://modrinth.com/mod/fabric-api)
 3. Download the mod jar and place it in your `mods` folder
 
@@ -51,4 +55,4 @@ The built jar will be in `build/libs/`.
 
 ## License
 
-CC0 1.0 Universal - See [LICENSE](LICENSE) for details.
+MIT License - See [LICENSE](LICENSE) for details.

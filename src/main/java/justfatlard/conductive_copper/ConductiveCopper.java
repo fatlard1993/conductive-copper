@@ -7,10 +7,12 @@ import net.minecraft.block.Blocks;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.util.math.Direction;
 import net.minecraft.world.World;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
+import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
@@ -18,82 +20,10 @@ import java.util.Set;
 
 public class ConductiveCopper implements ModInitializer {
     public static final String MOD_ID = "conductive_copper";
+    public static final int MAX_NETWORK_SIZE = 256;
+    private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    // All copper blocks that can conduct redstone (unwaxed and waxed)
-    private static final Set<Block> CONDUCTIVE_COPPER_BLOCKS = Set.of(
-        // Full blocks - unwaxed
-        Blocks.COPPER_BLOCK,
-        Blocks.EXPOSED_COPPER,
-        Blocks.WEATHERED_COPPER,
-        Blocks.OXIDIZED_COPPER,
-        // Full blocks - waxed
-        Blocks.WAXED_COPPER_BLOCK,
-        Blocks.WAXED_EXPOSED_COPPER,
-        Blocks.WAXED_WEATHERED_COPPER,
-        Blocks.WAXED_OXIDIZED_COPPER,
-        // Cut variants - unwaxed
-        Blocks.CUT_COPPER,
-        Blocks.EXPOSED_CUT_COPPER,
-        Blocks.WEATHERED_CUT_COPPER,
-        Blocks.OXIDIZED_CUT_COPPER,
-        // Cut variants - waxed
-        Blocks.WAXED_CUT_COPPER,
-        Blocks.WAXED_EXPOSED_CUT_COPPER,
-        Blocks.WAXED_WEATHERED_CUT_COPPER,
-        Blocks.WAXED_OXIDIZED_CUT_COPPER,
-        // Chiseled variants - unwaxed
-        Blocks.CHISELED_COPPER,
-        Blocks.EXPOSED_CHISELED_COPPER,
-        Blocks.WEATHERED_CHISELED_COPPER,
-        Blocks.OXIDIZED_CHISELED_COPPER,
-        // Chiseled variants - waxed
-        Blocks.WAXED_CHISELED_COPPER,
-        Blocks.WAXED_EXPOSED_CHISELED_COPPER,
-        Blocks.WAXED_WEATHERED_CHISELED_COPPER,
-        Blocks.WAXED_OXIDIZED_CHISELED_COPPER,
-        // Grates - unwaxed
-        Blocks.COPPER_GRATE,
-        Blocks.EXPOSED_COPPER_GRATE,
-        Blocks.WEATHERED_COPPER_GRATE,
-        Blocks.OXIDIZED_COPPER_GRATE,
-        // Grates - waxed
-        Blocks.WAXED_COPPER_GRATE,
-        Blocks.WAXED_EXPOSED_COPPER_GRATE,
-        Blocks.WAXED_WEATHERED_COPPER_GRATE,
-        Blocks.WAXED_OXIDIZED_COPPER_GRATE,
-        // Stairs - unwaxed
-        Blocks.CUT_COPPER_STAIRS,
-        Blocks.EXPOSED_CUT_COPPER_STAIRS,
-        Blocks.WEATHERED_CUT_COPPER_STAIRS,
-        Blocks.OXIDIZED_CUT_COPPER_STAIRS,
-        // Stairs - waxed
-        Blocks.WAXED_CUT_COPPER_STAIRS,
-        Blocks.WAXED_EXPOSED_CUT_COPPER_STAIRS,
-        Blocks.WAXED_WEATHERED_CUT_COPPER_STAIRS,
-        Blocks.WAXED_OXIDIZED_CUT_COPPER_STAIRS,
-        // Slabs - unwaxed
-        Blocks.CUT_COPPER_SLAB,
-        Blocks.EXPOSED_CUT_COPPER_SLAB,
-        Blocks.WEATHERED_CUT_COPPER_SLAB,
-        Blocks.OXIDIZED_CUT_COPPER_SLAB,
-        // Slabs - waxed
-        Blocks.WAXED_CUT_COPPER_SLAB,
-        Blocks.WAXED_EXPOSED_CUT_COPPER_SLAB,
-        Blocks.WAXED_WEATHERED_CUT_COPPER_SLAB,
-        Blocks.WAXED_OXIDIZED_CUT_COPPER_SLAB,
-        // Bulbs (copper lamps) - unwaxed
-        Blocks.COPPER_BULB,
-        Blocks.EXPOSED_COPPER_BULB,
-        Blocks.WEATHERED_COPPER_BULB,
-        Blocks.OXIDIZED_COPPER_BULB,
-        // Bulbs (copper lamps) - waxed
-        Blocks.WAXED_COPPER_BULB,
-        Blocks.WAXED_EXPOSED_COPPER_BULB,
-        Blocks.WAXED_WEATHERED_COPPER_BULB,
-        Blocks.WAXED_OXIDIZED_COPPER_BULB
-    );
-
-    // Maps blocks to their oxidation level (resistance per block)
+    // Maps blocks to their oxidation level (resistance per block).
     // Unoxidized = 0, Exposed = 1, Weathered = 2, Oxidized = 3
     private static final Map<Block, Integer> OXIDATION_RESISTANCE = new HashMap<>();
     static {
@@ -142,27 +72,40 @@ public class ConductiveCopper implements ModInitializer {
         }) { OXIDATION_RESISTANCE.put(b, 3); }
     }
 
+    // Derived from OXIDATION_RESISTANCE — single source of truth
+    private static final Set<Block> CONDUCTIVE_COPPER_BLOCKS = OXIDATION_RESISTANCE.keySet();
+
+    private static final Set<Block> COPPER_BULBS = Set.of(
+        Blocks.COPPER_BULB, Blocks.EXPOSED_COPPER_BULB,
+        Blocks.WEATHERED_COPPER_BULB, Blocks.OXIDIZED_COPPER_BULB,
+        Blocks.WAXED_COPPER_BULB, Blocks.WAXED_EXPOSED_COPPER_BULB,
+        Blocks.WAXED_WEATHERED_COPPER_BULB, Blocks.WAXED_OXIDIZED_COPPER_BULB
+    );
+
+    // Recursion guards — centralized here so the full defense system is visible in one place.
+    // IS_PROPAGATING: prevents re-entrant copper network propagation (used by CopperBlockMixin)
+    // IS_CHECKING_COPPER_POWER: prevents recursive getWeakRedstonePower calls (used by CopperPowerEmissionMixin)
+    // CopperBulbMixin maintains its own per-position IS_UPDATING guard (different pattern).
+    public static final ThreadLocal<Boolean> IS_PROPAGATING = ThreadLocal.withInitial(() -> false);
+    public static final ThreadLocal<Boolean> IS_CHECKING_COPPER_POWER = ThreadLocal.withInitial(() -> false);
+
+    // Signal cache: BlockPos -> int[6] (one slot per Direction ordinal), -1 = uncached.
+    // Valid only during a propagation cycle — cleared on both entry and exit.
+    private static final ThreadLocal<Map<BlockPos, int[]>> SIGNAL_CACHE =
+        ThreadLocal.withInitial(HashMap::new);
+
     /**
      * Get the resistance (signal loss) for a copper block based on oxidation level.
-     * Unoxidized = 0, Exposed = 1, Weathered = 2, Oxidized = 3
+     * Unknown blocks return Integer.MAX_VALUE (non-conductor).
      */
     public static int getResistance(Block block) {
-        return OXIDATION_RESISTANCE.getOrDefault(block, 0);
+        return OXIDATION_RESISTANCE.getOrDefault(block, Integer.MAX_VALUE);
     }
 
     public static int getResistance(BlockState state) {
         return getResistance(state.getBlock());
     }
 
-    @Override
-    public void onInitialize() {
-        System.out.println("[" + MOD_ID + "] Conductive Copper loaded!");
-    }
-
-    /**
-     * Check if a block is a conductive copper block (unwaxed or waxed).
-     * Both conduct redstone, but oxidation level affects resistance.
-     */
     public static boolean isConductiveCopper(Block block) {
         return CONDUCTIVE_COPPER_BLOCKS.contains(block);
     }
@@ -171,9 +114,19 @@ public class ConductiveCopper implements ModInitializer {
         return isConductiveCopper(state.getBlock());
     }
 
-    /**
-     * Helper class for Dijkstra priority queue - tracks position and accumulated resistance
-     */
+    public static boolean isCopperBulb(Block block) {
+        return COPPER_BULBS.contains(block);
+    }
+
+    public static void clearSignalCache() {
+        SIGNAL_CACHE.get().clear();
+    }
+
+    @Override
+    public void onInitialize() {
+        LOGGER.info("Conductive Copper loaded!");
+    }
+
     private static class CopperNode implements Comparable<CopperNode> {
         final BlockPos pos;
         final int resistance;
@@ -198,6 +151,13 @@ public class ConductiveCopper implements ModInitializer {
      * Final signal = source_power - accumulated_resistance
      */
     public static int getSignalThroughCopper(World world, BlockPos copperPos, Direction fromDirection) {
+        // Check cache first
+        Map<BlockPos, int[]> cache = SIGNAL_CACHE.get();
+        int[] cached = cache.get(copperPos);
+        if (cached != null && cached[fromDirection.ordinal()] >= 0) {
+            return cached[fromDirection.ordinal()];
+        }
+
         Map<BlockPos, Integer> minResistance = new HashMap<>();
         PriorityQueue<CopperNode> toVisit = new PriorityQueue<>();
         int maxSignal = 0;
@@ -216,11 +176,21 @@ public class ConductiveCopper implements ModInitializer {
                 continue;
             }
 
+            // Dead path: no source produces > 15, so this path can't yield positive signal
+            if (currentResistance > 15) {
+                continue;
+            }
+
             for (Direction dir : Direction.values()) {
                 BlockPos neighborPos = current.offset(dir);
                 BlockState neighborState = world.getBlockState(neighborPos);
 
                 if (isConductiveCopper(neighborState)) {
+                    if (minResistance.size() >= MAX_NETWORK_SIZE) {
+                        LOGGER.warn("Copper network at {} exceeded {} blocks, signal may be incomplete", copperPos, MAX_NETWORK_SIZE);
+                        continue;
+                    }
+
                     int neighborResistance = currentResistance + getResistance(neighborState);
 
                     if (neighborResistance < minResistance.getOrDefault(neighborPos, Integer.MAX_VALUE)) {
@@ -228,15 +198,16 @@ public class ConductiveCopper implements ModInitializer {
                         toVisit.add(new CopperNode(neighborPos, neighborResistance));
                     }
                 } else {
-                    // Skip the original direction we came from to avoid feedback loops
+                    // Skip the direction we entered from to prevent the querying block
+                    // from being read as its own power source. The deeper protection
+                    // against copper-wire-copper feedback loops lives in
+                    // traceWireNetworkPower, which skips copper blocks entirely.
                     if (current.equals(copperPos) && dir == fromDirection) {
                         continue;
                     }
 
                     int power = 0;
 
-                    // Special handling for redstone wire: trace through wire network to find
-                    // original power sources (levers, repeaters, etc.) - NOT copper-boosted power
                     if (neighborState.getBlock() == Blocks.REDSTONE_WIRE) {
                         power = traceWireNetworkPower(world, neighborPos);
                     } else {
@@ -249,12 +220,23 @@ public class ConductiveCopper implements ModInitializer {
                     if (power > 0) {
                         int effectivePower = Math.max(0, power - currentResistance);
                         maxSignal = Math.max(maxSignal, effectivePower);
+
+                        if (maxSignal >= 15) {
+                            storeInCache(cache, copperPos, fromDirection, maxSignal);
+                            return maxSignal;
+                        }
                     }
                 }
             }
         }
 
+        storeInCache(cache, copperPos, fromDirection, maxSignal);
         return maxSignal;
+    }
+
+    private static void storeInCache(Map<BlockPos, int[]> cache, BlockPos pos, Direction dir, int value) {
+        int[] slots = cache.computeIfAbsent(pos, k -> new int[]{-1, -1, -1, -1, -1, -1});
+        slots[dir.ordinal()] = value;
     }
 
     /**
@@ -263,13 +245,18 @@ public class ConductiveCopper implements ModInitializer {
      */
     private static int traceWireNetworkPower(World world, BlockPos wirePos) {
         Set<BlockPos> visitedWires = new HashSet<>();
-        Queue<BlockPos> wiresToCheck = new LinkedList<>();
+        Queue<BlockPos> wiresToCheck = new ArrayDeque<>();
         int maxPower = 0;
 
         wiresToCheck.add(wirePos);
         visitedWires.add(wirePos);
 
         while (!wiresToCheck.isEmpty()) {
+            if (visitedWires.size() >= MAX_NETWORK_SIZE) {
+                LOGGER.warn("Wire network at {} exceeded {} blocks, signal may be incomplete", wirePos, MAX_NETWORK_SIZE);
+                break;
+            }
+
             BlockPos currentWire = wiresToCheck.poll();
 
             for (Direction dir : Direction.values()) {
@@ -292,77 +279,14 @@ public class ConductiveCopper implements ModInitializer {
                     int srcPower = adjacentState.getWeakRedstonePower(world, adjacentPos, dir.getOpposite());
                     srcPower = Math.max(srcPower, adjacentState.getStrongRedstonePower(world, adjacentPos, dir.getOpposite()));
                     maxPower = Math.max(maxPower, srcPower);
+
+                    if (maxPower >= 15) {
+                        return maxPower;
+                    }
                 }
             }
         }
 
         return maxPower;
-    }
-
-    /**
-     * Check if there's a copper block adjacent to the given position
-     * that has a redstone signal coming into it.
-     */
-    public static int getCopperConductedSignal(World world, BlockPos pos, Direction direction) {
-        BlockPos adjacentPos = pos.offset(direction);
-        BlockState adjacentState = world.getBlockState(adjacentPos);
-
-        if (isConductiveCopper(adjacentState)) {
-            return getSignalThroughCopper(world, adjacentPos, direction.getOpposite());
-        }
-
-        return 0;
-    }
-
-    private static final ThreadLocal<Boolean> IS_PROPAGATING_FROM_WIRE = ThreadLocal.withInitial(() -> false);
-
-    /**
-     * Called when a powered wire is adjacent to copper.
-     * Propagates updates through the copper network to all other wires.
-     */
-    public static void propagateFromPoweredWire(World world, BlockPos copperPos, BlockPos sourceWirePos) {
-        if (IS_PROPAGATING_FROM_WIRE.get()) {
-            return;
-        }
-
-        try {
-            IS_PROPAGATING_FROM_WIRE.set(true);
-
-            Set<BlockPos> visited = new HashSet<>();
-            Set<BlockPos> wiresToUpdate = new HashSet<>();
-            Queue<BlockPos> toVisit = new LinkedList<>();
-
-            toVisit.add(copperPos);
-            visited.add(copperPos);
-
-            while (!toVisit.isEmpty()) {
-                BlockPos current = toVisit.poll();
-
-                for (Direction dir : Direction.values()) {
-                    BlockPos neighborPos = current.offset(dir);
-
-                    if (visited.contains(neighborPos)) {
-                        continue;
-                    }
-
-                    BlockState neighborState = world.getBlockState(neighborPos);
-
-                    if (isConductiveCopper(neighborState)) {
-                        visited.add(neighborPos);
-                        toVisit.add(neighborPos);
-                    } else if (neighborState.getBlock() == Blocks.REDSTONE_WIRE) {
-                        if (!neighborPos.equals(sourceWirePos)) {
-                            wiresToUpdate.add(neighborPos);
-                        }
-                    }
-                }
-            }
-
-            for (BlockPos wirePos : wiresToUpdate) {
-                world.updateNeighbor(wirePos, Blocks.COPPER_BLOCK, null);
-            }
-        } finally {
-            IS_PROPAGATING_FROM_WIRE.set(false);
-        }
     }
 }

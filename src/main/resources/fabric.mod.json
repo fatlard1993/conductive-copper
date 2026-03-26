@@ -10,7 +10,7 @@
     "sources": "https://github.com/fatlard1993/conductive-copper",
     "issues": "https://github.com/fatlard1993/conductive-copper/issues"
   },
-  "license": "CC0-1.0",
+  "license": "MIT",
   "icon": "assets/conductive_copper/icon.png",
   "environment": "*",
   "entrypoints": {
@@ -19,8 +19,7 @@
   "mixins": ["conductive_copper.mixins.json"],
   "depends": {
     "fabricloader": ">=0.18.1",
-    "minecraft": "~1.21.11",
-    "java": ">=21",
-    "fabric-api": "*"
+    "minecraft": "1.21.11",
+    "java": ">=21"
   }
 }

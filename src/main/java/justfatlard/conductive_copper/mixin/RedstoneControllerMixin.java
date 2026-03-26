@@ -14,19 +14,12 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Mixin to make redstone wire receive signals through conductive copper blocks.
  *
- * In 1.21.4, the redstone system uses DefaultRedstoneController.calculateTotalPowerAt()
+ * The redstone system uses DefaultRedstoneController.calculateTotalPowerAt()
  * which gets strong power and wire power. We inject to add copper-conducted power.
  */
 @Mixin(DefaultRedstoneController.class)
-public class RedstoneWireBlockMixin {
+public class RedstoneControllerMixin {
 
-    /**
-     * Inject at the end of calculateTotalPowerAt to add copper-conducted signals.
-     *
-     * This method calculates the final power level for a redstone wire position.
-     * We check all directions for copper blocks and trace through them to find
-     * power sources, returning the maximum of original and copper-conducted power.
-     */
     @Inject(method = "calculateTotalPowerAt", at = @At("RETURN"), cancellable = true)
     private void onCalculateTotalPowerAt(World world, BlockPos pos, CallbackInfoReturnable<Integer> cir) {
         int originalPower = cir.getReturnValue();
