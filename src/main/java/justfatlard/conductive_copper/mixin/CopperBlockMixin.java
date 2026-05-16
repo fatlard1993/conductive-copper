@@ -1,14 +1,14 @@
 package justfatlard.conductive_copper.mixin;
 
 import justfatlard.conductive_copper.ConductiveCopper;
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
-import net.minecraft.world.block.WireOrientation;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.redstone.Orientation;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.Unique;
 import org.spongepowered.asm.mixin.injection.At;
@@ -25,12 +25,12 @@ import java.util.Set;
  * When a copper block receives a neighbor update, it propagates that update
  * to all redstone components touching the copper network.
  */
-@Mixin(AbstractBlock.class)
+@Mixin(BlockBehaviour.class)
 public class CopperBlockMixin {
 
-    @Inject(method = "neighborUpdate", at = @At("HEAD"))
-    private void onNeighborUpdate(BlockState state, World world, BlockPos pos, Block sourceBlock, WireOrientation wireOrientation, boolean notify, CallbackInfo ci) {
-        if (world.isClient()) {
+    @Inject(method = "neighborChanged", at = @At("HEAD"))
+    private void onNeighborUpdate(BlockState state, Level world, BlockPos pos, Block sourceBlock, Orientation wireOrientation, boolean notify, CallbackInfo ci) {
+        if (world.isClientSide()) {
             return;
         }
 
@@ -61,7 +61,7 @@ public class CopperBlockMixin {
      * redstone components (wires, bulbs, pistons, repeaters, lamps, etc.).
      */
     @Unique
-    private void propagateUpdates(World world, BlockPos startPos) {
+    private void propagateUpdates(Level world, BlockPos startPos) {
         Set<BlockPos> visitedCopper = new HashSet<>();
         Set<BlockPos> neighborsToUpdate = new HashSet<>();
         Queue<BlockPos> toVisit = new ArrayDeque<>();
@@ -77,7 +77,7 @@ public class CopperBlockMixin {
             BlockPos current = toVisit.poll();
 
             for (Direction dir : Direction.values()) {
-                BlockPos neighborPos = current.offset(dir);
+                BlockPos neighborPos = current.relative(dir);
 
                 if (visitedCopper.contains(neighborPos)) {
                     continue;
@@ -106,7 +106,7 @@ public class CopperBlockMixin {
         }
 
         for (BlockPos updatePos : neighborsToUpdate) {
-            world.updateNeighbor(updatePos, Blocks.COPPER_BLOCK, null);
+            world.neighborChanged(updatePos, Blocks.COPPER_BLOCK, null);
         }
     }
 }

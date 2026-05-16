@@ -1,12 +1,12 @@
 package justfatlard.conductive_copper;
 
 import net.fabricmc.api.ModInitializer;
-import net.minecraft.block.Block;
-import net.minecraft.block.BlockState;
-import net.minecraft.block.Blocks;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.World;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.Level;
+import net.minecraft.world.level.block.Block;
+import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -150,7 +150,7 @@ public class ConductiveCopper implements ModInitializer {
      * Resistance is based on oxidation level: Unoxidized=0, Exposed=1, Weathered=2, Oxidized=3
      * Final signal = source_power - accumulated_resistance
      */
-    public static int getSignalThroughCopper(World world, BlockPos copperPos, Direction fromDirection) {
+    public static int getSignalThroughCopper(Level world, BlockPos copperPos, Direction fromDirection) {
         // Check cache first
         Map<BlockPos, int[]> cache = SIGNAL_CACHE.get();
         int[] cached = cache.get(copperPos);
@@ -182,7 +182,7 @@ public class ConductiveCopper implements ModInitializer {
             }
 
             for (Direction dir : Direction.values()) {
-                BlockPos neighborPos = current.offset(dir);
+                BlockPos neighborPos = current.relative(dir);
                 BlockState neighborState = world.getBlockState(neighborPos);
 
                 if (isConductiveCopper(neighborState)) {
@@ -212,8 +212,8 @@ public class ConductiveCopper implements ModInitializer {
                         power = traceWireNetworkPower(world, neighborPos);
                     } else {
                         Direction queryDir = dir.getOpposite();
-                        int weakPower = neighborState.getWeakRedstonePower(world, neighborPos, queryDir);
-                        int strongPower = neighborState.getStrongRedstonePower(world, neighborPos, queryDir);
+                        int weakPower = neighborState.getSignal(world, neighborPos, queryDir);
+                        int strongPower = neighborState.getDirectSignal(world, neighborPos, queryDir);
                         power = Math.max(weakPower, strongPower);
                     }
 
@@ -243,7 +243,7 @@ public class ConductiveCopper implements ModInitializer {
      * Trace through a wire network to find original power sources (levers, repeaters, etc.)
      * This avoids using copper-boosted power values by following wires back to their source.
      */
-    private static int traceWireNetworkPower(World world, BlockPos wirePos) {
+    private static int traceWireNetworkPower(Level world, BlockPos wirePos) {
         Set<BlockPos> visitedWires = new HashSet<>();
         Queue<BlockPos> wiresToCheck = new ArrayDeque<>();
         int maxPower = 0;
@@ -260,7 +260,7 @@ public class ConductiveCopper implements ModInitializer {
             BlockPos currentWire = wiresToCheck.poll();
 
             for (Direction dir : Direction.values()) {
-                BlockPos adjacentPos = currentWire.offset(dir);
+                BlockPos adjacentPos = currentWire.relative(dir);
 
                 if (visitedWires.contains(adjacentPos)) {
                     continue;
@@ -276,8 +276,8 @@ public class ConductiveCopper implements ModInitializer {
                     visitedWires.add(adjacentPos);
                     wiresToCheck.add(adjacentPos);
                 } else {
-                    int srcPower = adjacentState.getWeakRedstonePower(world, adjacentPos, dir.getOpposite());
-                    srcPower = Math.max(srcPower, adjacentState.getStrongRedstonePower(world, adjacentPos, dir.getOpposite()));
+                    int srcPower = adjacentState.getSignal(world, adjacentPos, dir.getOpposite());
+                    srcPower = Math.max(srcPower, adjacentState.getDirectSignal(world, adjacentPos, dir.getOpposite()));
                     maxPower = Math.max(maxPower, srcPower);
 
                     if (maxPower >= 15) {

@@ -1,11 +1,11 @@
 package justfatlard.conductive_copper.mixin;
 
 import justfatlard.conductive_copper.ConductiveCopper;
-import net.minecraft.block.AbstractBlock;
-import net.minecraft.block.BlockState;
-import net.minecraft.util.math.BlockPos;
-import net.minecraft.util.math.Direction;
-import net.minecraft.world.BlockView;
+import net.minecraft.core.BlockPos;
+import net.minecraft.core.Direction;
+import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.block.state.BlockBehaviour;
+import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
 import org.spongepowered.asm.mixin.injection.Inject;
@@ -18,11 +18,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
  * This allows redstone components (like copper bulbs) that are adjacent
  * to the copper network to detect the conducted power.
  */
-@Mixin(AbstractBlock.AbstractBlockState.class)
+@Mixin(BlockBehaviour.BlockStateBase.class)
 public class CopperPowerEmissionMixin {
 
-    @Inject(method = "getWeakRedstonePower", at = @At("HEAD"), cancellable = true)
-    private void onGetWeakRedstonePower(BlockView world, BlockPos pos, Direction direction, CallbackInfoReturnable<Integer> cir) {
+    @Inject(method = "getSignal", at = @At("HEAD"), cancellable = true)
+    private void onGetWeakRedstonePower(BlockGetter world, BlockPos pos, Direction direction, CallbackInfoReturnable<Integer> cir) {
         if (ConductiveCopper.IS_CHECKING_COPPER_POWER.get()) {
             return;
         }
@@ -33,7 +33,7 @@ public class CopperPowerEmissionMixin {
             return;
         }
 
-        if (!(world instanceof net.minecraft.world.World worldInstance)) {
+        if (!(world instanceof net.minecraft.world.level.Level worldInstance)) {
             return;
         }
 
