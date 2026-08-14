@@ -6,6 +6,7 @@ import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
+import net.minecraft.world.level.block.WeatheringCopperCollection;
 import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -23,66 +24,50 @@ public class ConductiveCopper implements ModInitializer {
     public static final int MAX_NETWORK_SIZE = 256;
     private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
 
-    // Maps blocks to their oxidation level (resistance per block).
-    // Unoxidized = 0, Exposed = 1, Weathered = 2, Oxidized = 3
+    // Weathering copper variants are not individual Blocks.* constants: they hang off
+    // WeatheringCopperCollection<Block> via .weathering()/.waxed(), then
+    // .unaffected()/.exposed()/.weathered()/.oxidized() on the resulting ByState<Block>.
     private static final Map<Block, Integer> OXIDATION_RESISTANCE = new HashMap<>();
+    private static final Set<Block> COPPER_BULBS = new HashSet<>();
+
     static {
-        // Unoxidized (0 resistance)
-        for (Block b : new Block[]{
-            Blocks.COPPER_BLOCK, Blocks.WAXED_COPPER_BLOCK,
-            Blocks.CUT_COPPER, Blocks.WAXED_CUT_COPPER,
-            Blocks.CHISELED_COPPER, Blocks.WAXED_CHISELED_COPPER,
-            Blocks.COPPER_GRATE, Blocks.WAXED_COPPER_GRATE,
-            Blocks.CUT_COPPER_STAIRS, Blocks.WAXED_CUT_COPPER_STAIRS,
-            Blocks.CUT_COPPER_SLAB, Blocks.WAXED_CUT_COPPER_SLAB,
-            Blocks.COPPER_BULB, Blocks.WAXED_COPPER_BULB
-        }) { OXIDATION_RESISTANCE.put(b, 0); }
-
-        // Exposed (1 resistance)
-        for (Block b : new Block[]{
-            Blocks.EXPOSED_COPPER, Blocks.WAXED_EXPOSED_COPPER,
-            Blocks.EXPOSED_CUT_COPPER, Blocks.WAXED_EXPOSED_CUT_COPPER,
-            Blocks.EXPOSED_CHISELED_COPPER, Blocks.WAXED_EXPOSED_CHISELED_COPPER,
-            Blocks.EXPOSED_COPPER_GRATE, Blocks.WAXED_EXPOSED_COPPER_GRATE,
-            Blocks.EXPOSED_CUT_COPPER_STAIRS, Blocks.WAXED_EXPOSED_CUT_COPPER_STAIRS,
-            Blocks.EXPOSED_CUT_COPPER_SLAB, Blocks.WAXED_EXPOSED_CUT_COPPER_SLAB,
-            Blocks.EXPOSED_COPPER_BULB, Blocks.WAXED_EXPOSED_COPPER_BULB
-        }) { OXIDATION_RESISTANCE.put(b, 1); }
-
-        // Weathered (2 resistance)
-        for (Block b : new Block[]{
-            Blocks.WEATHERED_COPPER, Blocks.WAXED_WEATHERED_COPPER,
-            Blocks.WEATHERED_CUT_COPPER, Blocks.WAXED_WEATHERED_CUT_COPPER,
-            Blocks.WEATHERED_CHISELED_COPPER, Blocks.WAXED_WEATHERED_CHISELED_COPPER,
-            Blocks.WEATHERED_COPPER_GRATE, Blocks.WAXED_WEATHERED_COPPER_GRATE,
-            Blocks.WEATHERED_CUT_COPPER_STAIRS, Blocks.WAXED_WEATHERED_CUT_COPPER_STAIRS,
-            Blocks.WEATHERED_CUT_COPPER_SLAB, Blocks.WAXED_WEATHERED_CUT_COPPER_SLAB,
-            Blocks.WEATHERED_COPPER_BULB, Blocks.WAXED_WEATHERED_COPPER_BULB
-        }) { OXIDATION_RESISTANCE.put(b, 2); }
-
-        // Oxidized (3 resistance)
-        for (Block b : new Block[]{
-            Blocks.OXIDIZED_COPPER, Blocks.WAXED_OXIDIZED_COPPER,
-            Blocks.OXIDIZED_CUT_COPPER, Blocks.WAXED_OXIDIZED_CUT_COPPER,
-            Blocks.OXIDIZED_CHISELED_COPPER, Blocks.WAXED_OXIDIZED_CHISELED_COPPER,
-            Blocks.OXIDIZED_COPPER_GRATE, Blocks.WAXED_OXIDIZED_COPPER_GRATE,
-            Blocks.OXIDIZED_CUT_COPPER_STAIRS, Blocks.WAXED_OXIDIZED_CUT_COPPER_STAIRS,
-            Blocks.OXIDIZED_CUT_COPPER_SLAB, Blocks.WAXED_OXIDIZED_CUT_COPPER_SLAB,
-            Blocks.OXIDIZED_COPPER_BULB, Blocks.WAXED_OXIDIZED_COPPER_BULB
-        }) { OXIDATION_RESISTANCE.put(b, 3); }
+        addFamily(Blocks.CUT_COPPER, false);
+        addFamily(Blocks.CHISELED_COPPER, false);
+        addFamily(Blocks.COPPER_GRATE, false);
+        addFamily(Blocks.CUT_COPPER_STAIRS, false);
+        addFamily(Blocks.CUT_COPPER_SLAB, false);
+        addFamily(Blocks.COPPER_BULB, true);
     }
 
-    // Derived from OXIDATION_RESISTANCE — single source of truth
+    /** Registers all eight weathering/waxed variants of a copper block family. */
+    private static void addFamily(WeatheringCopperCollection<Block> family, boolean isBulb) {
+        WeatheringCopperCollection.ByState<Block> unwaxed = family.weathering();
+        WeatheringCopperCollection.ByState<Block> waxed = family.waxed();
+
+        OXIDATION_RESISTANCE.put(unwaxed.unaffected(), 0);
+        OXIDATION_RESISTANCE.put(waxed.unaffected(), 0);
+        OXIDATION_RESISTANCE.put(unwaxed.exposed(), 1);
+        OXIDATION_RESISTANCE.put(waxed.exposed(), 1);
+        OXIDATION_RESISTANCE.put(unwaxed.weathered(), 2);
+        OXIDATION_RESISTANCE.put(waxed.weathered(), 2);
+        OXIDATION_RESISTANCE.put(unwaxed.oxidized(), 3);
+        OXIDATION_RESISTANCE.put(waxed.oxidized(), 3);
+
+        if (isBulb) {
+            COPPER_BULBS.add(unwaxed.unaffected());
+            COPPER_BULBS.add(unwaxed.exposed());
+            COPPER_BULBS.add(unwaxed.weathered());
+            COPPER_BULBS.add(unwaxed.oxidized());
+            COPPER_BULBS.add(waxed.unaffected());
+            COPPER_BULBS.add(waxed.exposed());
+            COPPER_BULBS.add(waxed.weathered());
+            COPPER_BULBS.add(waxed.oxidized());
+        }
+    }
+
     private static final Set<Block> CONDUCTIVE_COPPER_BLOCKS = OXIDATION_RESISTANCE.keySet();
 
-    private static final Set<Block> COPPER_BULBS = Set.of(
-        Blocks.COPPER_BULB, Blocks.EXPOSED_COPPER_BULB,
-        Blocks.WEATHERED_COPPER_BULB, Blocks.OXIDIZED_COPPER_BULB,
-        Blocks.WAXED_COPPER_BULB, Blocks.WAXED_EXPOSED_COPPER_BULB,
-        Blocks.WAXED_WEATHERED_COPPER_BULB, Blocks.WAXED_OXIDIZED_COPPER_BULB
-    );
-
-    // Recursion guards — centralized here so the full defense system is visible in one place.
+    // Recursion guards, centralized here so the full defense system is visible in one place.
     // IS_PROPAGATING: prevents re-entrant copper network propagation (used by CopperBlockMixin)
     // IS_CHECKING_COPPER_POWER: prevents recursive getWeakRedstonePower calls (used by CopperPowerEmissionMixin)
     // CopperBulbMixin maintains its own per-position IS_UPDATING guard (different pattern).
@@ -90,14 +75,11 @@ public class ConductiveCopper implements ModInitializer {
     public static final ThreadLocal<Boolean> IS_CHECKING_COPPER_POWER = ThreadLocal.withInitial(() -> false);
 
     // Signal cache: BlockPos -> int[6] (one slot per Direction ordinal), -1 = uncached.
-    // Valid only during a propagation cycle — cleared on both entry and exit.
+    // Valid only during a propagation cycle; cleared on both entry and exit.
     private static final ThreadLocal<Map<BlockPos, int[]>> SIGNAL_CACHE =
         ThreadLocal.withInitial(HashMap::new);
 
-    /**
-     * Get the resistance (signal loss) for a copper block based on oxidation level.
-     * Unknown blocks return Integer.MAX_VALUE (non-conductor).
-     */
+    /** Unknown blocks return Integer.MAX_VALUE (non-conductor). */
     public static int getResistance(Block block) {
         return OXIDATION_RESISTANCE.getOrDefault(block, Integer.MAX_VALUE);
     }
@@ -143,15 +125,10 @@ public class ConductiveCopper implements ModInitializer {
     }
 
     /**
-     * Trace through connected copper blocks to find the signal strength
-     * that should be received from a copper network.
-     *
-     * Uses Dijkstra's algorithm to find minimum-resistance paths through the copper network.
-     * Resistance is based on oxidation level: Unoxidized=0, Exposed=1, Weathered=2, Oxidized=3
-     * Final signal = source_power - accumulated_resistance
+     * Dijkstra over the copper network for minimum-resistance paths.
+     * Final signal = source_power - accumulated_resistance.
      */
     public static int getSignalThroughCopper(Level world, BlockPos copperPos, Direction fromDirection) {
-        // Check cache first
         Map<BlockPos, int[]> cache = SIGNAL_CACHE.get();
         int[] cached = cache.get(copperPos);
         if (cached != null && cached[fromDirection.ordinal()] >= 0) {

@@ -12,11 +12,8 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
- * Mixin to make conductive copper blocks emit weak redstone power
- * when they're part of a powered copper network.
- *
- * This allows redstone components (like copper bulbs) that are adjacent
- * to the copper network to detect the conducted power.
+ * Makes conductive copper blocks emit weak redstone power when they're part
+ * of a powered copper network, so adjacent components can detect it.
  */
 @Mixin(BlockBehaviour.BlockStateBase.class)
 public class CopperPowerEmissionMixin {

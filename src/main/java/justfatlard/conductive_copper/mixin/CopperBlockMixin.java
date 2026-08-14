@@ -56,10 +56,6 @@ public class CopperBlockMixin {
         }
     }
 
-    /**
-     * Find all copper blocks in the network and update all neighboring
-     * redstone components (wires, bulbs, pistons, repeaters, lamps, etc.).
-     */
     @Unique
     private void propagateUpdates(Level world, BlockPos startPos) {
         Set<BlockPos> visitedCopper = new HashSet<>();
@@ -99,14 +95,13 @@ public class CopperBlockMixin {
             }
         }
 
-        // Also check if the start block itself is a bulb
         BlockState startState = world.getBlockState(startPos);
         if (ConductiveCopper.isCopperBulb(startState.getBlock())) {
             neighborsToUpdate.add(startPos);
         }
 
         for (BlockPos updatePos : neighborsToUpdate) {
-            world.neighborChanged(updatePos, Blocks.COPPER_BLOCK, null);
+            world.neighborChanged(updatePos, Blocks.COPPER_BLOCK.weathering().unaffected(), null);
         }
     }
 }

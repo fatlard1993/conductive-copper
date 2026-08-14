@@ -34,11 +34,9 @@ public class CopperRemovalMixin {
             ConductiveCopper.IS_PROPAGATING.set(true);
             ConductiveCopper.clearSignalCache();
 
-            // Notify all neighbors of the removed copper block so adjacent
-            // copper networks and redstone components can recalculate
             for (Direction dir : Direction.values()) {
                 BlockPos neighborPos = pos.relative(dir);
-                world.neighborChanged(neighborPos, Blocks.COPPER_BLOCK, null);
+                world.neighborChanged(neighborPos, Blocks.COPPER_BLOCK.weathering().unaffected(), null);
             }
         } finally {
             ConductiveCopper.clearSignalCache();
