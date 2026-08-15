@@ -2,7 +2,7 @@
   "required": true,
   "package": "justfatlard.conductive_copper.mixin",
   "compatibilityLevel": "JAVA_21",
-  "server": [
+  "mixins": [
     "RedstoneControllerMixin",
     "CopperBlockMixin",
     "CopperBulbMixin",

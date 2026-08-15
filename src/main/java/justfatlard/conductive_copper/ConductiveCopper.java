@@ -31,6 +31,7 @@ public class ConductiveCopper implements ModInitializer {
     private static final Set<Block> COPPER_BULBS = new HashSet<>();
 
     static {
+        addFamily(Blocks.COPPER_BLOCK, false);
         addFamily(Blocks.CUT_COPPER, false);
         addFamily(Blocks.CHISELED_COPPER, false);
         addFamily(Blocks.COPPER_GRATE, false);

@@ -14,6 +14,11 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 /**
  * Makes redstone wire receive signals through conductive copper: injects into
  * the wire evaluator's calculateTargetStrength to add copper-conducted power.
+ *
+ * Known gap: worlds with the REDSTONE_EXPERIMENTS feature flag enabled use
+ * ExperimentalRedstoneWireEvaluator instead (see RedStoneWireBlock.useExperimentalEvaluator),
+ * which this mixin does not hook. Wire-adjacent conduction degrades on such worlds;
+ * default worlds are unaffected.
  */
 @Mixin(DefaultRedstoneWireEvaluator.class)
 public class RedstoneControllerMixin {
