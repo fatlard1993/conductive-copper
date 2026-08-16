@@ -35,11 +35,7 @@ Copper networks are limited to **256 blocks**. Larger networks will still conduc
 
 ## Installation
 
-Install alongside its declared dependencies (see `fabric.mod.json`), then place the mod jar in your `mods` folder.
-
-## Requirements
-
-Targets the Minecraft, Fabric Loader, and Java versions declared in this mod's `gradle.properties`; check there for the exact currently-supported version.
+Install server-side alongside its declared dependencies (see `fabric.mod.json`). Vanilla clients need nothing. Version targets live in `gradle.properties` (Minecraft, loader, Fabric API) and `fabric.mod.json` (Java).
 
 ## Building from Source
 
@@ -51,4 +47,4 @@ The built jar will be in `build/libs/`.
 
 ## License
 
-MIT License - See [LICENSE](LICENSE) for details.
+MIT, see [LICENSE](LICENSE).
