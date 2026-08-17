@@ -28,6 +28,11 @@ public class ConductiveCopper implements ModInitializer {
     // WeatheringCopperCollection<Block> via .weathering()/.waxed(), then
     // .unaffected()/.exposed()/.weathered()/.oxidized() on the resulting ByState<Block>.
     private static final Map<Block, Integer> OXIDATION_RESISTANCE = new HashMap<>();
+
+    /** What a signal loses crossing this block, or null if it is not copper at all. */
+    public static Integer resistanceOf(Block block) {
+        return OXIDATION_RESISTANCE.get(block);
+    }
     private static final Set<Block> COPPER_BULBS = new HashSet<>();
 
     static {
@@ -107,6 +112,10 @@ public class ConductiveCopper implements ModInitializer {
 
     @Override
     public void onInitialize() {
+        if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("block-tip")) {
+            justfatlard.conductive_copper.integration.CopperTipRegistration.register();
+        }
+
 		// Guarded class load: SignalQuestRegistration names village-quests types
 		// directly, so it must not be touched when that mod is absent.
 		if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("village-quests-justfatlard")) {

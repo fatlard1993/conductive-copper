@@ -29,6 +29,7 @@
 		"java": ">=25"
 	},
 	"suggests": {
-		"village-quests-justfatlard": "*"
+		"village-quests-justfatlard": "*",
+		"block-tip": "*"
 	}
 }
