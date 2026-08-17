@@ -107,6 +107,12 @@ public class ConductiveCopper implements ModInitializer {
 
     @Override
     public void onInitialize() {
+		// Guarded class load: SignalQuestRegistration names village-quests types
+		// directly, so it must not be touched when that mod is absent.
+		if (net.fabricmc.loader.api.FabricLoader.getInstance().isModLoaded("village-quests-justfatlard")) {
+			justfatlard.conductive_copper.integration.SignalQuestRegistration.register();
+		}
+
         LOGGER.info("Conductive Copper loaded!");
     }
 

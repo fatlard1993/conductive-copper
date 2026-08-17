@@ -10,6 +10,16 @@ A Minecraft Fabric mod that makes copper blocks conduct redstone signals.
 - **Copper bulbs work naturally** - Toggle on rising edge, show powered state when receiving power
 - **Optimal path finding** - Signals take the lowest-resistance route through copper networks
 
+## Learning It
+
+Nothing in the world tells you copper carries redstone, and nothing tells you oxidation eats it. Copper looks like copper, the lamp is simply dark.
+
+So with [village-quests](https://github.com/justfatlard/village-quests) installed, a toolsmith or armorer who trusts you will occasionally ask you to fix a signal line they gave up on. It is a lever, five oxidized blocks, and a lamp that stays dark: five oxidized blocks cost exactly the fifteen a lever makes, so the signal arrives at zero.
+
+It is dark rather than dim on purpose. Dim reads as nearly working; dark reads as broken, which is the question you want the player asking. Scraping one block with an axe moves the number, and that is the moment the mod explains itself.
+
+The integration is optional and guarded: without village-quests the mod behaves exactly as before.
+
 ## Resistance Values
 
 | Oxidation Level | Resistance per Block |
