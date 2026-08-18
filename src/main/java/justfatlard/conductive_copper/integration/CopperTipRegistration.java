@@ -20,8 +20,8 @@ public final class CopperTipRegistration {
 			if (resistance == null) return null;
 
 			return resistance == 0
-				? "Carries redstone, loses nothing"
-				: "Carries redstone, costs " + resistance + " a block";
+				? "Carries redstone, lossless"
+				: "Carries redstone, -" + resistance + " a block";
 		});
 	}
 }
