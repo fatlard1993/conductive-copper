@@ -14,7 +14,7 @@ A Minecraft Fabric mod that makes copper blocks conduct redstone signals.
 
 Copper carrying redstone sideways is a curiosity: dust already does that, and cheaper. Copper carrying it **upward** is the point, because dust cannot climb at all and the vanilla answer is a staircase of repeaters taking up a room.
 
-So with [village-quests](https://github.com/justfatlard/village-quests) installed, a toolsmith or armorer raises a mast in front of you: switch at the bottom, lamp at the top, nothing between them but copper. They throw the lever and nothing happens.
+So with [village-quests](https://github.com/fatlard1993/village-quests) installed, a toolsmith or armorer raises a mast in front of you: switch at the bottom, lamp at the top, nothing between them but copper. They throw the lever and nothing happens.
 
 Five oxidized blocks eat exactly the fifteen a lever makes, so the signal arrives at zero. Dark, not dim: dim reads as nearly working, dark reads as broken, and broken is the question worth asking. Scraping one block with an axe moves a number that was not moving.
 
