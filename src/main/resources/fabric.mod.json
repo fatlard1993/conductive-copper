@@ -24,8 +24,8 @@
 		"conductive_copper.mixins.json"
 	],
 	"depends": {
-		"fabricloader": ">=0.18.1",
-		"minecraft": ">=26.2",
+		"fabricloader": ">=${loaderVersion}",
+		"minecraft": "${minecraftDependency}",
 		"java": ">=25"
 	},
 	"suggests": {
