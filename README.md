@@ -1,11 +1,12 @@
 # Conductive Copper
 
-A Minecraft Fabric mod that makes copper blocks conduct redstone signals.
+A Minecraft Fabric mod that makes copper and gold blocks conduct redstone signals.
 
 ## Features
 
 - **All copper blocks conduct redstone** - Full blocks, cut, chiseled, grates, stairs, slabs, and bulbs
 - **Both waxed and unwaxed copper** - Waxing doesn't insulate, it just prevents oxidation
+- **Gold conducts too** - Never oxidizes, never loses signal: the lossless wire
 - **Oxidation-based resistance** - More oxidized copper = more signal loss
 - **Copper bulbs work naturally** - Toggle on rising edge, show powered state when receiving power
 - **Optimal path finding** - Signals take the lowest-resistance route through copper networks
@@ -28,6 +29,7 @@ The mast stays up afterwards. It works now.
 | Exposed | 1 |
 | Weathered | 2 |
 | Oxidized | 3 |
+| Gold block | 0 (never changes) |
 
 ## Examples
 
@@ -37,23 +39,17 @@ Starting with a lever (power level 15):
 - **5 weathered copper blocks** → Signal strength 5 (15 - 5×2)
 - **5 oxidized copper blocks** → Signal strength 0 (15 - 5×3 = 0)
 
-Mix different oxidation levels to control signal decay. The mod automatically finds the lowest-resistance path through your copper network.
+Mix different oxidation levels to control signal decay. The mod automatically finds the lowest-resistance path through your network, and gold and copper join freely.
+
+With [block-tip](https://github.com/fatlard1993/block-tip) installed, looking at any conductor shows what it costs a signal and the strength it is carrying right now.
 
 ## Limits
 
 Copper networks are limited to **256 blocks**. Larger networks will still conduct, but pathfinding stops exploring beyond this limit, which may result in lower signal strength at the edges.
 
-## Installation
+## Development
 
-Install server-side alongside its declared dependencies (see `fabric.mod.json`). Vanilla clients need nothing. Version targets live in `gradle.properties` (Minecraft, loader, Fabric API) and `fabric.mod.json` (Java).
-
-## Building from Source
-
-```bash
-./gradlew build
-```
-
-The built jar will be in `build/libs/`.
+Installing and building are in [DEVELOPMENT.md](DEVELOPMENT.md).
 
 ## License
 

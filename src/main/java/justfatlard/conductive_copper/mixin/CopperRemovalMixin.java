@@ -22,7 +22,7 @@ public class CopperRemovalMixin {
 
     @Inject(method = "affectNeighborsAfterRemoval", at = @At("TAIL"))
     private void onCopperRemoved(BlockState state, ServerLevel world, BlockPos pos, boolean moved, CallbackInfo ci) {
-        if (!ConductiveCopper.isConductiveCopper(state)) {
+        if (!ConductiveCopper.isConductor(state)) {
             return;
         }
 

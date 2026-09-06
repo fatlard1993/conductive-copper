@@ -50,7 +50,7 @@ public class CopperBulbMixin {
         boolean hasAdjacentCopper = false;
         for (Direction direction : Direction.values()) {
             BlockPos adjacentPos = pos.relative(direction);
-            if (ConductiveCopper.isConductiveCopper(world.getBlockState(adjacentPos))) {
+            if (ConductiveCopper.isConductor(world.getBlockState(adjacentPos))) {
                 hasAdjacentCopper = true;
                 break;
             }

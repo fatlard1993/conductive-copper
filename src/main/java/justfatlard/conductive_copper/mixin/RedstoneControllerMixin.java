@@ -37,7 +37,7 @@ public class RedstoneControllerMixin {
             BlockPos adjacentPos = pos.relative(direction);
             BlockState adjacentState = world.getBlockState(adjacentPos);
 
-            if (ConductiveCopper.isConductiveCopper(adjacentState)) {
+            if (ConductiveCopper.isConductor(adjacentState)) {
                 int copperSignal = ConductiveCopper.getSignalThroughCopper(
                     world,
                     adjacentPos,

@@ -26,7 +26,7 @@ public class CopperPowerEmissionMixin {
 
         BlockState state = (BlockState)(Object)this;
 
-        if (!ConductiveCopper.isConductiveCopper(state)) {
+        if (!ConductiveCopper.isConductor(state)) {
             return;
         }
 

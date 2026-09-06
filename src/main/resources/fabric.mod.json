@@ -3,7 +3,7 @@
 	"id": "conductive_copper",
 	"version": "${version}",
 	"name": "Conductive Copper",
-	"description": "Copper blocks conduct redstone with oxidation-based resistance. Unoxidized copper is lossless, while oxidized copper causes signal decay.",
+	"description": "Copper and gold blocks conduct redstone. Copper pays for its oxidation: unoxidized is lossless, oxidized decays the signal. Gold never oxidizes and never loses any.",
 	"authors": [
 		"justfatlard"
 	],
@@ -30,6 +30,7 @@
 	},
 	"suggests": {
 		"village-quests-justfatlard": "*",
-		"block-tip": "*"
+		"block-tip": "*",
+		"mixed-slabs-justfatlard": "*"
 	}
 }

@@ -34,7 +34,7 @@ public class CopperBlockMixin {
             return;
         }
 
-        if (!ConductiveCopper.isConductiveCopper(state)) {
+        if (!ConductiveCopper.isConductor(state)) {
             return;
         }
 
@@ -42,7 +42,7 @@ public class CopperBlockMixin {
             return;
         }
 
-        if (ConductiveCopper.isConductiveCopper(sourceBlock)) {
+        if (ConductiveCopper.isConductor(sourceBlock)) {
             return;
         }
 
@@ -81,7 +81,7 @@ public class CopperBlockMixin {
 
                 BlockState neighborState = world.getBlockState(neighborPos);
 
-                if (ConductiveCopper.isConductiveCopper(neighborState)) {
+                if (ConductiveCopper.isConductor(neighborState)) {
                     visitedCopper.add(neighborPos);
                     toVisit.add(neighborPos);
 
