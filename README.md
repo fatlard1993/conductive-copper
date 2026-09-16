@@ -15,7 +15,7 @@ A Minecraft Fabric mod that makes copper and gold blocks conduct redstone signal
 
 Copper carrying redstone sideways is a curiosity: dust already does that, and cheaper. Copper carrying it **upward** is the point, because dust cannot climb at all and the vanilla answer is a staircase of repeaters taking up a room.
 
-So with [village-quests](https://github.com/fatlard1993/village-quests) installed, a toolsmith or armorer raises a mast in front of you: switch at the bottom, lamp at the top, nothing between them but copper. They throw the lever and nothing happens.
+So with [village-quests](https://github.com/fatlard1993/village-quests) installed, a toolsmith or armorer who knows you well enough (reputation 15 or more) now and then raises a mast in front of you: switch at the bottom, lamp at the top, nothing between them but copper. They throw the lever and nothing happens.
 
 Five oxidized blocks eat exactly the fifteen a lever makes, so the signal arrives at zero. Dark, not dim: dim reads as nearly working, dark reads as broken, and broken is the question worth asking. Scraping one block with an axe moves a number that was not moving.
 
@@ -41,7 +41,9 @@ Starting with a lever (power level 15):
 
 Mix different oxidation levels to control signal decay. The mod automatically finds the lowest-resistance path through your network, and gold and copper join freely.
 
-With [block-tip](https://github.com/fatlard1993/block-tip) installed, looking at any conductor shows what it costs a signal and the strength it is carrying right now.
+With [mixed-slabs](https://github.com/fatlard1993/mixed-slabs) installed, a cut copper slab built into a mixed slab still conducts. One copper half is enough; with two, the signal takes the cleaner one, so the block costs what its least oxidized half costs.
+
+With [block-tip](https://github.com/fatlard1993/block-tip) installed, looking at any conductor shows the strength it is carrying right now, first, then what it costs a signal crossing it.
 
 ## Limits
 
