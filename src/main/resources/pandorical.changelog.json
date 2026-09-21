@@ -1,0 +1,18 @@
+{
+	"overview": [
+		"Copper and gold blocks carry redstone, and copper pays for its oxidation. Unoxidized is lossless, each stage of weathering eats more of the signal, and gold never oxidizes and never loses any."
+	],
+	"versions": {
+		"1.1.1": [
+			"A cut copper slab built into a mixed slab still conducts. One copper half is enough, and with two the signal takes the cleaner one, so the block costs what its least oxidized half costs."
+		],
+		"1.1.0": [
+			"Looking at a copper block now says what it costs a signal, which nothing in the game was telling you.",
+			"And a toolsmith or armorer who trusts you raises a mast in front of you: lever at the bottom, lamp at the top, five oxidized blocks between. They throw the lever and nothing happens. Scraping one block with an axe moves a number that was not moving."
+		],
+		"1.0.0": [
+			"Every copper block conducts redstone, waxed or not: full blocks, cut, chiseled, grates, stairs, slabs and bulbs. Gold does too, and never weathers.",
+			"The point is that copper climbs, which dust cannot do at all. Signals take the lowest-resistance route through a network on their own."
+		]
+	}
+}

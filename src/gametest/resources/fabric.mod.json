@@ -1,0 +1,18 @@
+{
+	"schemaVersion": 1,
+	"id": "conductive-copper-gametest",
+	"version": "1.0.0",
+	"name": "Conductive Copper smoke test",
+	"description": "Loads the mod, joins a world, and fails if anything on the way threw.",
+	"license": "MIT",
+	"environment": "*",
+	"entrypoints": {
+		"fabric-client-gametest": [
+			"justfatlard.conductive_copper.gametest.SmokeTest"
+		]
+	},
+	"depends": {
+		"conductive_copper": "*",
+		"fabric-client-gametest-api-v1": "*"
+	}
+}
