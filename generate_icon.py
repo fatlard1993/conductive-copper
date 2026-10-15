@@ -1,10 +1,9 @@
 #!/usr/bin/env python3
-"""Generate Conductive Copper's mod menu icon: a gold block wired to a lit copper bulb.
+"""Generate Conductive Copper's mod menu icon: a copper mast carrying a lever's signal up to a lamp.
 
-The mod adds no blocks of its own; it makes vanilla copper and gold carry a redstone signal.
-So the icon is those vanilla textures doing it: gold at the bottom left, a redstone line
-leaving it, and a copper bulb lit by what the line carries. The bulb keeps its own sixteen
-pixels on a 32-pixel grid; squeezed any smaller, its filament smears into an orange square.
+The mod adds no blocks of its own; it makes vanilla copper and gold carry a redstone signal,
+and carrying it upward is the point, since dust cannot climb. So the icon is the mast from the
+mod's village-quests lesson: a lever at the foot, a column of cut copper, a lit lamp on top.
 
 Pure stdlib PNG reader and writer (zlib + struct) so it runs without Pillow, the same script
 generated art approach as the rest of the suite. Deterministic: re-running produces identical
@@ -244,24 +243,28 @@ def rect(sprite, x0, y0, x1, y1, colour):
             put(sprite, x, y, colour)
 
 
-GROUND = (36, 34, 40, 255)
-HOT, DEEP = (255, 46, 30, 255), (150, 8, 4, 255)
+SKY = (28, 30, 44, 255)
+HALO = (255, 214, 120, 255)
+COBBLE, STICK, LEVER_TIP = (120, 120, 120, 255), (130, 100, 60, 255), (180, 40, 30, 255)
+MAST_X = 12
 
 
 def build_icon():
-    sprite = fill(GROUND, 32)
-    stamp(sprite, vanilla("block/copper_bulb_lit.png"), 13, 3)
-    stamp(sprite, crop(vanilla("block/gold_block.png"), 0, 0, 11, 11), 2, 18)
-    for x in range(13, 21):
-        put(sprite, x, 23, HOT)
-        put(sprite, x, 24, HOT)
-        put(sprite, x, 25, DEEP)
-    for y in range(19, 23):
-        put(sprite, 20, y, HOT)
-        put(sprite, 21, y, HOT)
-        put(sprite, 22, y, DEEP)
-    put(sprite, 22, 23, DEEP)
-    put(sprite, 22, 24, DEEP)
+    sprite = fill(SKY, 32)
+    lamp = sample(vanilla("block/redstone_lamp_on.png"), 8, 8)
+    copper = sample(vanilla("block/cut_copper.png"), 8, 8)
+    stamp(sprite, lamp, MAST_X, 2)
+    for i in range(3):
+        stamp(sprite, copper, MAST_X, 10 + i * 8)
+    for x, y in ((MAST_X - 1, 5), (MAST_X + 8, 5), (MAST_X + 3, 1), (MAST_X + 4, 1),
+                 (MAST_X - 2, 4), (MAST_X + 9, 4), (MAST_X - 2, 7), (MAST_X + 9, 7)):
+        put(sprite, x, y, HALO)
+    for y in range(26, 30):
+        put(sprite, MAST_X - 2, y, COBBLE)
+        put(sprite, MAST_X - 1, y, COBBLE)
+    for i in range(4):
+        put(sprite, MAST_X - 3 - i, 26 - i, STICK)
+    put(sprite, MAST_X - 7, 22, LEVER_TIP)
     return scale(sprite, 4)
 
 
