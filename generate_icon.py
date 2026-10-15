@@ -1,13 +1,10 @@
 #!/usr/bin/env python3
-"""Generate Conductive Copper's mod menu icon: a copper face and a gold one, wired together.
+"""Generate Conductive Copper's mod menu icon: a gold block wired to a lit copper bulb.
 
-The mod adds no blocks of its own - it makes vanilla copper and gold carry a redstone signal -
-so the icon is built from those three vanilla textures rather than from anything in this repo.
-Copper above the anti-diagonal, gold below it, and a redstone line straight across the seam,
-which is the whole mod in one square: the signal runs through the metal.
-
-The line's two reds are the brightest and darkest pixels of the vanilla redstone block, read at
-generation time, so it stays vanilla's red rather than one picked by eye.
+The mod adds no blocks of its own; it makes vanilla copper and gold carry a redstone signal.
+So the icon is those vanilla textures doing it: gold at the bottom left, a redstone line
+leaving it, and a copper bulb lit by what the line carries. The bulb keeps its own sixteen
+pixels on a 32-pixel grid; squeezed any smaller, its filament smears into an orange square.
 
 Pure stdlib PNG reader and writer (zlib + struct) so it runs without Pillow, the same script
 generated art approach as the rest of the suite. Deterministic: re-running produces identical
@@ -26,6 +23,7 @@ import zlib
 HERE = os.path.dirname(os.path.abspath(__file__))
 OUT = os.path.join(HERE, "src/main/resources/assets/conductive_copper/icon.png")
 
+CLEAR = (0, 0, 0, 0)
 _JAR = None
 
 
@@ -199,36 +197,72 @@ def scale(pixels, n):
     return [[px for px in row for _ in range(n)] for row in pixels for _ in range(n)]
 
 
-SIZE = 16
-WIRE_ROWS = (7, 8)          # the two middle rows, so the line sits on the seam
-EDGE_ROWS = (6, 9)          # a darker red either side, the way redstone dust is drawn
+def blank(size=16):
+    return [[CLEAR] * size for _ in range(size)]
 
 
-def reds():
-    """Vanilla's own redstone red, brightest and darkest, from the solid block."""
-    def lum(px):
-        return 0.299 * px[0] + 0.587 * px[1] + 0.114 * px[2]
+def stamp(sprite, art, left, top):
+    """Lay art onto the sprite at (left, top); transparent source pixels leave
+    the sprite alone."""
+    for y, row in enumerate(art):
+        for x, px in enumerate(row):
+            if px[3] and 0 <= top + y < len(sprite) and 0 <= left + x < len(sprite[0]):
+                sprite[top + y][left + x] = px
+    return sprite
 
-    opaque = [px for row in vanilla("block/redstone_block.png") for px in row if px[3]]
-    return max(opaque, key=lum), min(opaque, key=lum)
+
+def crop(pixels, left, top, width, height):
+    return [row[left:left + width] for row in pixels[top:top + height]]
+
+
+
+def here(path):
+    """A texture this mod ships, read from the repo rather than the jar."""
+    with open(os.path.join(HERE, path), "rb") as f:
+        return decode_png(f.read())
+
+
+def sample(pixels, width, height):
+    """Nearest neighbour to any size, up or down. Pixel art is never smoothed."""
+    src_h, src_w = len(pixels), len(pixels[0])
+    return [[pixels[y * src_h // height][x * src_w // width] for x in range(width)]
+            for y in range(height)]
+
+
+def fill(colour, size=16):
+    return [[colour] * size for _ in range(size)]
+
+
+def put(sprite, x, y, colour):
+    if 0 <= y < len(sprite) and 0 <= x < len(sprite[0]):
+        sprite[y][x] = colour
+
+
+def rect(sprite, x0, y0, x1, y1, colour):
+    for y in range(y0, y1 + 1):
+        for x in range(x0, x1 + 1):
+            put(sprite, x, y, colour)
+
+
+GROUND = (36, 34, 40, 255)
+HOT, DEEP = (255, 46, 30, 255), (150, 8, 4, 255)
 
 
 def build_icon():
-    copper = vanilla("block/copper_block.png")
-    gold = vanilla("block/gold_block.png")
-    bright, dark = reds()
-
-    # Copper above the anti-diagonal, gold below. Splitting on x + y keeps the seam a clean
-    # 45 degrees on a square texture, so neither metal reads as an afterthought.
-    sprite = [[gold[y][x] if x + y > SIZE else copper[y][x] for x in range(SIZE)]
-              for y in range(SIZE)]
-
-    for x in range(SIZE):
-        for y in EDGE_ROWS:
-            sprite[y][x] = dark
-        for y in WIRE_ROWS:
-            sprite[y][x] = bright
-    return scale(sprite, 8)
+    sprite = fill(GROUND, 32)
+    stamp(sprite, vanilla("block/copper_bulb_lit.png"), 13, 3)
+    stamp(sprite, crop(vanilla("block/gold_block.png"), 0, 0, 11, 11), 2, 18)
+    for x in range(13, 21):
+        put(sprite, x, 23, HOT)
+        put(sprite, x, 24, HOT)
+        put(sprite, x, 25, DEEP)
+    for y in range(19, 23):
+        put(sprite, 20, y, HOT)
+        put(sprite, 21, y, HOT)
+        put(sprite, 22, y, DEEP)
+    put(sprite, 22, 23, DEEP)
+    put(sprite, 22, 24, DEEP)
+    return scale(sprite, 4)
 
 
 if __name__ == "__main__":
