@@ -49,6 +49,10 @@ With [block-tip](https://github.com/fatlard1993/block-tip) installed, looking at
 
 Copper networks are limited to **256 blocks**. Larger networks will still conduct, but pathfinding stops exploring beyond this limit, which may result in lower signal strength at the edges.
 
+## Installing
+
+Server-side only, and Pandorical is not needed: players connect with an unmodified client. Singleplayer works too.
+
 ## Development
 
 Installing and building are in [DEVELOPMENT.md](DEVELOPMENT.md).
