@@ -32,5 +32,12 @@
 		"village-quests-justfatlard": "*",
 		"block-tip": "*",
 		"mixed-slabs-justfatlard": "*"
+	},
+	"custom": {
+		"modmenu": {
+			"links": {
+				"modmenu.donate": "https://github.com/sponsors/fatlard1993"
+			}
+		}
 	}
 }
