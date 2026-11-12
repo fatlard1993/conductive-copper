@@ -1,0 +1,51 @@
+{
+  "demo": {
+    "name": "Conductive Copper",
+    "icon": "minecraft:copper_block",
+    "about": [
+      "Copper and gold blocks carry redstone, even straight up where dust can't go, and the more oxidized the copper, the more signal it loses.",
+      "Stack a column of copper with a lever at the bottom and a lamp on top, then try it with oxidized copper and scrape it back with the axe to see the signal come through."
+    ]
+  },
+  "pvp_preset": 1,
+  "needs": ["conductive_copper"],
+  "preset": {
+    "name": "Conductive Copper",
+    "icon": "minecraft:copper_block",
+    "pvp": false,
+    "game_mode": "survival",
+    "entry_kit": [
+      {"slot": 0, "item": {"id": "minecraft:copper_block", "count": 32}},
+      {"slot": 1, "item": {"id": "minecraft:lever", "count": 8}},
+      {"slot": 2, "item": {"id": "minecraft:redstone_lamp", "count": 8}},
+      {"slot": 3, "item": {"id": "minecraft:oxidized_copper", "count": 16}},
+      {"slot": 4, "item": {"id": "minecraft:stone_axe", "count": 1}},
+      {"slot": 5, "item": {"id": "minecraft:gold_block", "count": 8}},
+      {"slot": 6, "item": {"id": "minecraft:redstone", "count": 64}},
+      {"slot": 7, "item": {"id": "minecraft:copper_bulb", "count": 4}},
+      {"slot": 8, "item": {"id": "minecraft:stone_bricks", "count": 64}},
+      {"slot": 9, "item": {"id": "minecraft:exposed_copper", "count": 16}},
+      {"slot": 10, "item": {"id": "minecraft:weathered_copper", "count": 16}},
+      {"slot": 11, "item": {"id": "minecraft:cut_copper", "count": 16}},
+      {"slot": 12, "item": {"id": "minecraft:copper_grate", "count": 16}},
+      {"slot": 13, "item": {"id": "minecraft:honeycomb", "count": 8}},
+      {"slot": 14, "item": {"id": "minecraft:redstone_torch", "count": 16}},
+      {"slot": 15, "item": {"id": "minecraft:repeater", "count": 8}},
+      {"slot": 16, "item": {"id": "minecraft:comparator", "count": 4}},
+      {"slot": 17, "item": {"id": "minecraft:piston", "count": 8}},
+      {"slot": 18, "item": {"id": "minecraft:sticky_piston", "count": 4}},
+      {"slot": 19, "item": {"id": "minecraft:stone_button", "count": 4}},
+      {"slot": 20, "item": {"id": "minecraft:stone_bricks", "count": 64}},
+      {"slot": 21, "item": {"id": "minecraft:cooked_beef", "count": 8}}
+    ],
+    "respawn_kit": "entry",
+    "goal": "time",
+    "mobs": "off",
+    "life": 15,
+    "size": 3,
+    "world": "overworld",
+    "shape": "flat",
+    "biome": "minecraft:plains",
+    "weather": "clear"
+  }
+}
