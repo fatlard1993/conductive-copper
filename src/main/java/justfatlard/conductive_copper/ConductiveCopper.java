@@ -218,6 +218,7 @@ public class ConductiveCopper implements ModInitializer {
         Map<BlockPos, Integer> minResistance = new HashMap<>();
         PriorityQueue<CopperNode> toVisit = new PriorityQueue<>();
         int maxSignal = 0;
+        boolean truncated = false;
 
         BlockState startState = world.getBlockState(copperPos);
         int startResistance = getResistance(startState);
@@ -244,7 +245,7 @@ public class ConductiveCopper implements ModInitializer {
 
                 if (isConductor(neighborState)) {
                     if (minResistance.size() >= MAX_NETWORK_SIZE) {
-                        LOGGER.warn("Copper network at {} exceeded {} blocks, signal may be incomplete", copperPos, MAX_NETWORK_SIZE);
+                        truncated = true;
                         continue;
                     }
 
@@ -293,6 +294,9 @@ public class ConductiveCopper implements ModInitializer {
             }
         }
 
+        if (truncated) {
+            LOGGER.warn("Copper network at {} exceeded {} blocks, signal may be incomplete", copperPos, MAX_NETWORK_SIZE);
+        }
         return maxSignal;
     }
 
