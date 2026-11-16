@@ -3,6 +3,14 @@
 		"Copper and gold blocks carry redstone, and copper pays for its oxidation. Unoxidized is lossless, each stage of weathering eats more of the signal, and gold never oxidizes and never loses any."
 	],
 	"versions": {
+		"1.1.8": [
+			"Game tests carry signals down copper the way a player builds it.",
+			"Reading a redstone signal checks for copper before anything else, so blocks that are not copper cost nothing extra.",
+			"A copper signal remembered in one dimension is no longer read back in another, or in a later tick.",
+			"A copper network too big to walk warns at most once a minute, and wire beside copper is traced once per read, not once per touching block.",
+			"A door or water beside unpowered copper no longer walks the whole network and wakes every block along it, and a powered network wakes only the blocks that listen.",
+			"The note on copper's block-change hook says which changes it can miss."
+		],
 		"1.1.7": [
 			"A demo to play in PvP Dimensions' onboarding."
 		],
