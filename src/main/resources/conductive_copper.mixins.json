@@ -7,7 +7,8 @@
     "CopperBlockMixin",
     "CopperBulbMixin",
     "CopperPowerEmissionMixin",
-    "CopperRemovalMixin"
+    "CopperRemovalMixin",
+    "CopperPlacementMixin"
   ],
   "injectors": {
     "defaultRequire": 1

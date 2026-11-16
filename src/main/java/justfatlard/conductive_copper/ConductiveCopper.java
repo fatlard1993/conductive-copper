@@ -8,7 +8,9 @@ import justfatlard.conductive_copper.integration.MixedSlabIntegration;
 import net.minecraft.world.level.block.Block;
 import net.minecraft.world.level.block.Blocks;
 import net.minecraft.world.level.block.WeatheringCopperCollection;
+import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
+import net.minecraft.world.level.redstone.Orientation;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -184,6 +186,43 @@ public class ConductiveCopper implements ModInitializer {
             if (isConductor(half)) return true;
         }
         return false;
+    }
+
+    /**
+     * Whether telling this block a neighbour changed can do anything: its class, or one between it
+     * and {@link BlockBehaviour}, answers {@code neighborChanged}. Stone, air, planks and the rest
+     * of what surrounds copper inherit the empty default, and a network wakes only what listens.
+     */
+    public static boolean reactsToNeighbours(BlockState state) {
+        return REACTS_TO_NEIGHBOURS.get(state.getBlock().getClass());
+    }
+
+    private static final Class<?>[] NEIGHBOR_CHANGED = {
+        BlockState.class, Level.class, BlockPos.class, Block.class, Orientation.class, boolean.class
+    };
+
+    // If the method cannot be found under this name on BlockBehaviour itself, nothing can be told
+    // apart, and every block counts as listening - waking too much rather than too little.
+    private static final boolean CAN_TELL_LISTENERS = declaresNeighborChanged(BlockBehaviour.class);
+
+    private static final ClassValue<Boolean> REACTS_TO_NEIGHBOURS = new ClassValue<>() {
+        @Override
+        protected Boolean computeValue(Class<?> type) {
+            if (!CAN_TELL_LISTENERS) return true;
+            for (Class<?> c = type; c != null && c != BlockBehaviour.class; c = c.getSuperclass()) {
+                if (declaresNeighborChanged(c)) return true;
+            }
+            return false;
+        }
+    };
+
+    private static boolean declaresNeighborChanged(Class<?> type) {
+        try {
+            type.getDeclaredMethod("neighborChanged", NEIGHBOR_CHANGED);
+            return true;
+        } catch (NoSuchMethodException e) {
+            return false;
+        }
     }
 
     public static boolean isCopperBulb(Block block) {

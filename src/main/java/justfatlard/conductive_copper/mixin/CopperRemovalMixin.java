@@ -1,6 +1,7 @@
 package justfatlard.conductive_copper.mixin;
 
 import justfatlard.conductive_copper.ConductiveCopper;
+import justfatlard.conductive_copper.QuietNetworks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.server.level.ServerLevel;
@@ -25,6 +26,8 @@ public class CopperRemovalMixin {
         if (!ConductiveCopper.isConductor(state)) {
             return;
         }
+
+        QuietNetworks.forget(world);
 
         if (ConductiveCopper.IS_PROPAGATING.get()) {
             return;

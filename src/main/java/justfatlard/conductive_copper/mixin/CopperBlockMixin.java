@@ -1,6 +1,7 @@
 package justfatlard.conductive_copper.mixin;
 
 import justfatlard.conductive_copper.ConductiveCopper;
+import justfatlard.conductive_copper.QuietNetworks;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.Level;
@@ -23,7 +24,8 @@ import java.util.Set;
 /**
  * Mixin to propagate redstone updates through conductive copper networks.
  * When a copper block receives a neighbor update, it propagates that update
- * to all redstone components touching the copper network.
+ * to every block touching the copper network that listens for one, unless the
+ * network is already known to carry nothing (see QuietNetworks).
  */
 @Mixin(BlockBehaviour.class)
 public class CopperBlockMixin {
@@ -49,7 +51,9 @@ public class CopperBlockMixin {
         try {
             ConductiveCopper.IS_PROPAGATING.set(true);
             ConductiveCopper.clearSignalCache();
-            propagateUpdates(world, pos);
+            if (!QuietNetworks.stillQuiet(world, pos)) {
+                propagateUpdates(world, pos);
+            }
         } finally {
             ConductiveCopper.clearSignalCache();
             ConductiveCopper.IS_PROPAGATING.set(false);
@@ -61,12 +65,15 @@ public class CopperBlockMixin {
         Set<BlockPos> visitedCopper = new HashSet<>();
         Set<BlockPos> neighborsToUpdate = new HashSet<>();
         Queue<BlockPos> toVisit = new ArrayDeque<>();
+        boolean powered = false;
+        boolean whole = true;
 
         toVisit.add(startPos);
         visitedCopper.add(startPos);
 
         while (!toVisit.isEmpty()) {
             if (visitedCopper.size() >= ConductiveCopper.MAX_NETWORK_SIZE) {
+                whole = false;
                 break;
             }
 
@@ -89,8 +96,11 @@ public class CopperBlockMixin {
                         neighborsToUpdate.add(neighborPos);
                     }
                 } else {
-                    // Notify ALL non-copper neighbors: wires, pistons, repeaters, lamps, etc.
+                    // Every non-copper neighbour is collected, listening or not, and the ones
+                    // that do not listen are passed over only below: the order the rest are told
+                    // in follows this set's iteration, which hangs on everything in it.
                     neighborsToUpdate.add(neighborPos);
+                    powered |= QuietNetworks.isSource(neighborState);
                 }
             }
         }
@@ -101,7 +111,11 @@ public class CopperBlockMixin {
         }
 
         for (BlockPos updatePos : neighborsToUpdate) {
-            world.neighborChanged(updatePos, Blocks.COPPER_BLOCK.weathering().unaffected(), null);
+            if (ConductiveCopper.reactsToNeighbours(world.getBlockState(updatePos))) {
+                world.neighborChanged(updatePos, Blocks.COPPER_BLOCK.weathering().unaffected(), null);
+            }
         }
+
+        QuietNetworks.walked(world, visitedCopper, whole && !powered);
     }
 }
