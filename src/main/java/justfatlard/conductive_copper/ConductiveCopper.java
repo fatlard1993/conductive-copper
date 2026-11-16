@@ -20,11 +20,35 @@ import java.util.Map;
 import java.util.PriorityQueue;
 import java.util.Queue;
 import java.util.Set;
+import java.util.concurrent.TimeUnit;
 
 public class ConductiveCopper implements ModInitializer {
     public static final String MOD_ID = "conductive_copper";
     public static final int MAX_NETWORK_SIZE = 256;
     private static final Logger LOGGER = LoggerFactory.getLogger(MOD_ID);
+
+    // A network over the limit is walked again on every read of it, so each kind of walk says so
+    // at most once a minute rather than on every redstone tick.
+    private static final OversizeWarning COPPER_TOO_BIG = new OversizeWarning("Copper");
+    private static final OversizeWarning WIRE_TOO_BIG = new OversizeWarning("Wire");
+
+    private static final class OversizeWarning {
+        private static final long INTERVAL = TimeUnit.MINUTES.toNanos(1);
+        private final String network;
+        private long quietUntil = System.nanoTime();
+
+        OversizeWarning(String network) {
+            this.network = network;
+        }
+
+        void at(BlockPos pos) {
+            long now = System.nanoTime();
+            if (now - quietUntil < 0) return;
+            quietUntil = now + INTERVAL;
+            LOGGER.warn("{} network at {} exceeded {} blocks, signal may be incomplete (said at most once a minute)",
+                network, pos, MAX_NETWORK_SIZE);
+        }
+    }
 
     // What a signal loses crossing each conductor. Copper pays for its oxidation; gold does not
     // oxidise and pays nothing.
@@ -238,6 +262,7 @@ public class ConductiveCopper implements ModInitializer {
     /** @param fromDirection the querying neighbour's side, skipped at the start block; null skips nothing */
     private static int walk(Level world, BlockPos copperPos, Direction fromDirection) {
         Map<BlockPos, Integer> minResistance = new HashMap<>();
+        Map<BlockPos, Integer> tracedWires = new HashMap<>();
         PriorityQueue<CopperNode> toVisit = new PriorityQueue<>();
         int maxSignal = 0;
         boolean truncated = false;
@@ -296,7 +321,7 @@ public class ConductiveCopper implements ModInitializer {
                     int power = 0;
 
                     if (neighborState.getBlock() == Blocks.REDSTONE_WIRE) {
-                        power = traceWireNetworkPower(world, neighborPos);
+                        power = traceWireNetworkPower(world, neighborPos, tracedWires);
                     } else {
                         Direction queryDir = dir.getOpposite();
                         int weakPower = neighborState.getSignal(world, neighborPos, queryDir);
@@ -317,7 +342,7 @@ public class ConductiveCopper implements ModInitializer {
         }
 
         if (truncated) {
-            LOGGER.warn("Copper network at {} exceeded {} blocks, signal may be incomplete", copperPos, MAX_NETWORK_SIZE);
+            COPPER_TOO_BIG.at(copperPos);
         }
         return maxSignal;
     }
@@ -330,8 +355,16 @@ public class ConductiveCopper implements ModInitializer {
     /**
      * Trace through a wire network to find original power sources (levers, repeaters, etc.)
      * This avoids using copper-boosted power values by following wires back to their source.
+     *
+     * @param traced wire networks this walk has already traced to the end. A trace that empties
+     *               its queue has seen the whole connected wire network, which every one of its
+     *               wires would trace to the same answer, so it is recorded for all of them. One
+     *               cut short, by the size limit or by finding full power, is not.
      */
-    private static int traceWireNetworkPower(Level world, BlockPos wirePos) {
+    private static int traceWireNetworkPower(Level world, BlockPos wirePos, Map<BlockPos, Integer> traced) {
+        Integer known = traced.get(wirePos);
+        if (known != null) return known;
+
         Set<BlockPos> visitedWires = new HashSet<>();
         Queue<BlockPos> wiresToCheck = new ArrayDeque<>();
         int maxPower = 0;
@@ -341,8 +374,8 @@ public class ConductiveCopper implements ModInitializer {
 
         while (!wiresToCheck.isEmpty()) {
             if (visitedWires.size() >= MAX_NETWORK_SIZE) {
-                LOGGER.warn("Wire network at {} exceeded {} blocks, signal may be incomplete", wirePos, MAX_NETWORK_SIZE);
-                break;
+                WIRE_TOO_BIG.at(wirePos);
+                return maxPower;
             }
 
             BlockPos currentWire = wiresToCheck.poll();
@@ -375,6 +408,9 @@ public class ConductiveCopper implements ModInitializer {
             }
         }
 
+        for (BlockPos wire : visitedWires) {
+            traced.put(wire, maxPower);
+        }
         return maxPower;
     }
 }
