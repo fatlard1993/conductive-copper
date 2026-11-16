@@ -11,8 +11,9 @@ import org.spongepowered.asm.mixin.injection.Inject;
 import org.spongepowered.asm.mixin.injection.callback.CallbackInfo;
 
 /**
- * Tells QuietNetworks about every block change the server makes, through the one call every
- * change goes through whatever the block, so a conductor or a source arriving is never missed.
+ * Tells QuietNetworks about block changes on the server, through the call every change makes
+ * whatever the block. A change made with UPDATE_SKIP_ON_PLACE, as structure templates do, skips
+ * it; QuietNetworks.stillQuiet looks beside the updated block for a source that came that way.
  */
 @Mixin(BlockBehaviour.BlockStateBase.class)
 public class CopperPlacementMixin {
