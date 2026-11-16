@@ -12,6 +12,7 @@ import net.minecraft.world.level.block.state.BlockState;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import java.lang.ref.WeakReference;
 import java.util.ArrayDeque;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -82,9 +83,27 @@ public class ConductiveCopper implements ModInitializer {
     public static final ThreadLocal<Boolean> IS_CHECKING_COPPER_POWER = ThreadLocal.withInitial(() -> false);
 
     // Signal cache: BlockPos -> int[6] (one slot per Direction ordinal), -1 = uncached.
-    // Valid only during a propagation cycle; cleared on both entry and exit.
-    private static final ThreadLocal<Map<BlockPos, int[]>> SIGNAL_CACHE =
-        ThreadLocal.withInitial(HashMap::new);
+    // Cleared on entry to and exit from every propagation cycle, and holds one world's answers
+    // for one tick: a position means nothing without its dimension, and a read in a later tick
+    // must see what changed since.
+    private static final ThreadLocal<SignalCache> SIGNAL_CACHE =
+        ThreadLocal.withInitial(SignalCache::new);
+
+    private static final class SignalCache {
+        final Map<BlockPos, int[]> slots = new HashMap<>();
+        private WeakReference<Level> level = new WeakReference<>(null);
+        private long tick;
+
+        Map<BlockPos, int[]> scopedTo(Level world) {
+            long now = world.getGameTime();
+            if (level.get() != world || tick != now) {
+                slots.clear();
+                level = new WeakReference<>(world);
+                tick = now;
+            }
+            return slots;
+        }
+    }
 
     /** Unknown blocks return Integer.MAX_VALUE (non-conductor). */
     public static int getResistance(Block block) {
@@ -148,7 +167,7 @@ public class ConductiveCopper implements ModInitializer {
     }
 
     public static void clearSignalCache() {
-        SIGNAL_CACHE.get().clear();
+        SIGNAL_CACHE.get().slots.clear();
     }
 
     @Override
@@ -186,7 +205,7 @@ public class ConductiveCopper implements ModInitializer {
      * Final signal = source_power - accumulated_resistance.
      */
     public static int getSignalThroughCopper(Level world, BlockPos copperPos, Direction fromDirection) {
-        Map<BlockPos, int[]> cache = SIGNAL_CACHE.get();
+        Map<BlockPos, int[]> cache = SIGNAL_CACHE.get().scopedTo(world);
         int[] cached = cache.get(copperPos);
         if (cached != null && cached[fromDirection.ordinal()] >= 0) {
             return cached[fromDirection.ordinal()];
@@ -202,8 +221,8 @@ public class ConductiveCopper implements ModInitializer {
      *
      * <p>The redstone path always asks on behalf of a neighbour, and leaves that neighbour out so
      * it cannot be read as its own source. A player looking at the block has no such seat, so
-     * every side counts. Runs outside a propagation cycle, so it stays out of the signal cache,
-     * which is only valid inside one, and raises the same re-entry guard the emission mixin does.
+     * every side counts. The signal cache keeps a slot per side asked from, and this asks from
+     * none, so it stays out of it, and raises the same re-entry guard the emission mixin does.
      */
     public static int signalAt(Level world, BlockPos pos) {
         if (IS_CHECKING_COPPER_POWER.get()) return 0;
