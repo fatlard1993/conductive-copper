@@ -26,12 +26,24 @@ public final class MixedSlabIntegration {
 
 	private static final boolean AVAILABLE = FabricLoader.getInstance().isModLoaded("mixed-slabs-justfatlard");
 
+	/** The mixed slab block type, or null when it cannot be named - in which case every block might be one. */
+	private static final Class<?> BLOCK_TYPE = AVAILABLE ? blockType() : null;
+
 	/**
 	 * Bound once. This sits behind {@code isConductor}, which redstone calls hard enough
 	 * that looking a method up per call would show.
 	 */
 	private static MethodHandle halves;
 	private static boolean bound = false;
+
+	/**
+	 * Whether this block could be a mixed slab, without going through the API. {@code isConductor}
+	 * is asked about every block a redstone signal is read from, so everything that is plainly not
+	 * a mixed slab has to be turned away before the reflective call.
+	 */
+	public static boolean mightBeMixedSlab(Block block) {
+		return AVAILABLE && (BLOCK_TYPE == null || BLOCK_TYPE.isInstance(block));
+	}
 
 	/** The blocks inside a mixed slab, or an empty list for anything else. */
 	@SuppressWarnings("unchecked")
@@ -45,6 +57,14 @@ public final class MixedSlabIntegration {
 			return (List<Block>) handle.invokeExact(state);
 		} catch (Throwable t) {
 			return List.of();
+		}
+	}
+
+	private static Class<?> blockType() {
+		try {
+			return Class.forName("justfatlard.mixed_slabs.MixedSlabBlock", false, MixedSlabIntegration.class.getClassLoader());
+		} catch (ClassNotFoundException e) {
+			return null;
 		}
 	}
 

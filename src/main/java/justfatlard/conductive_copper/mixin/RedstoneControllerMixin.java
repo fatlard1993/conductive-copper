@@ -1,5 +1,6 @@
 package justfatlard.conductive_copper.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import justfatlard.conductive_copper.ConductiveCopper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
@@ -8,8 +9,6 @@ import net.minecraft.world.level.block.state.BlockState;
 import net.minecraft.world.level.redstone.DefaultRedstoneWireEvaluator;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Makes redstone wire receive signals through conductive copper: injects into
@@ -23,12 +22,10 @@ import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 @Mixin(DefaultRedstoneWireEvaluator.class)
 public class RedstoneControllerMixin {
 
-    @Inject(method = "calculateTargetStrength", at = @At("RETURN"), cancellable = true)
-    private void onCalculateTotalPowerAt(Level world, BlockPos pos, CallbackInfoReturnable<Integer> cir) {
-        int originalPower = cir.getReturnValue();
-
+    @ModifyReturnValue(method = "calculateTargetStrength", at = @At("RETURN"))
+    private int onCalculateTotalPowerAt(int originalPower, Level world, BlockPos pos) {
         if (originalPower >= 15) {
-            return;
+            return originalPower;
         }
 
         int maxCopperPower = 0;
@@ -47,8 +44,6 @@ public class RedstoneControllerMixin {
             }
         }
 
-        if (maxCopperPower > originalPower) {
-            cir.setReturnValue(maxCopperPower);
-        }
+        return Math.max(maxCopperPower, originalPower);
     }
 }

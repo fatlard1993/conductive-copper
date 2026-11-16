@@ -1,47 +1,45 @@
 package justfatlard.conductive_copper.mixin;
 
+import com.llamalad7.mixinextras.injector.ModifyReturnValue;
 import justfatlard.conductive_copper.ConductiveCopper;
 import net.minecraft.core.BlockPos;
 import net.minecraft.core.Direction;
 import net.minecraft.world.level.BlockGetter;
+import net.minecraft.world.level.Level;
 import net.minecraft.world.level.block.state.BlockBehaviour;
 import net.minecraft.world.level.block.state.BlockState;
 import org.spongepowered.asm.mixin.Mixin;
 import org.spongepowered.asm.mixin.injection.At;
-import org.spongepowered.asm.mixin.injection.Inject;
-import org.spongepowered.asm.mixin.injection.callback.CallbackInfoReturnable;
 
 /**
  * Makes conductive copper blocks emit weak redstone power when they're part
  * of a powered copper network, so adjacent components can detect it.
+ *
+ * <p>Every redstone read in the game passes through here, so the conductor test comes first and
+ * nothing is allocated for a block that is not one.
  */
 @Mixin(BlockBehaviour.BlockStateBase.class)
 public class CopperPowerEmissionMixin {
 
-    @Inject(method = "getSignal", at = @At("HEAD"), cancellable = true)
-    private void onGetWeakRedstonePower(BlockGetter world, BlockPos pos, Direction direction, CallbackInfoReturnable<Integer> cir) {
+    @ModifyReturnValue(method = "getSignal", at = @At("RETURN"))
+    private int onGetWeakRedstonePower(int original, BlockGetter world, BlockPos pos, Direction direction) {
+        if (!ConductiveCopper.isConductor((BlockState)(Object)this)) {
+            return original;
+        }
+
+        if (!(world instanceof Level worldInstance)) {
+            return original;
+        }
+
         if (ConductiveCopper.IS_CHECKING_COPPER_POWER.get()) {
-            return;
-        }
-
-        BlockState state = (BlockState)(Object)this;
-
-        if (!ConductiveCopper.isConductor(state)) {
-            return;
-        }
-
-        if (!(world instanceof net.minecraft.world.level.Level worldInstance)) {
-            return;
+            return original;
         }
 
         try {
             ConductiveCopper.IS_CHECKING_COPPER_POWER.set(true);
 
             int power = ConductiveCopper.getSignalThroughCopper(worldInstance, pos, direction);
-
-            if (power > 0) {
-                cir.setReturnValue(power);
-            }
+            return power > 0 ? power : original;
         } finally {
             ConductiveCopper.IS_CHECKING_COPPER_POWER.set(false);
         }

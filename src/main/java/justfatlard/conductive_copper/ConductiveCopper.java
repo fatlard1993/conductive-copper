@@ -108,8 +108,9 @@ public class ConductiveCopper implements ModInitializer {
      * would mean a block conducted worse for having more metal in it.
      */
     public static int getResistance(BlockState state) {
-        int direct = getResistance(state.getBlock());
-        if (direct != Integer.MAX_VALUE) return direct;
+        Block block = state.getBlock();
+        int direct = getResistance(block);
+        if (direct != Integer.MAX_VALUE || !MixedSlabIntegration.mightBeMixedSlab(block)) return direct;
 
         int best = Integer.MAX_VALUE;
         for (Block half : MixedSlabIntegration.halvesOf(state)) {
@@ -129,7 +130,9 @@ public class ConductiveCopper implements ModInitializer {
     }
 
     public static boolean isConductor(BlockState state) {
-        if (isConductor(state.getBlock())) return true;
+        Block block = state.getBlock();
+        if (isConductor(block)) return true;
+        if (!MixedSlabIntegration.mightBeMixedSlab(block)) return false;
 
         // A cut copper slab built into a mixed slab is still copper and still touching its
         // neighbours; only its block identity changed. One copper half is enough - the metal is
