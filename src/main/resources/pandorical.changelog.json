@@ -3,6 +3,9 @@
 		"Copper and gold blocks carry redstone, and copper pays for its oxidation. Unoxidized is lossless, each stage of weathering eats more of the signal, and gold never oxidizes and never loses any."
 	],
 	"versions": {
+		"1.1.9": [
+			"Describes itself in one short line of what it adds."
+		],
 		"1.1.8": [
 			"Game tests carry signals down copper the way a player builds it.",
 			"Reading a redstone signal checks for copper before anything else, so blocks that are not copper cost nothing extra.",
